@@ -151,11 +151,14 @@ jobs:
           # Copy binary
           cp target/${{ matrix.target }}/release/omnitype${{ matrix.ext }} release/
           
-          # Generate debug symbols if on Linux/macOS
-          if [[ "${{ matrix.target }}" == *"linux"* || "${{ matrix.target }}" == *"apple"* ]]; then
+          # Generate debug symbols if on Linux (objcopy not available on macOS)
+          if [[ "${{ matrix.target }}" == *"linux"* ]]; then
             objcopy --only-keep-debug target/${{ matrix.target }}/release/omnitype${{ matrix.ext }} release/omnitype${{ matrix.ext }}.debug
             strip --strip-debug --strip-unneeded release/omnitype${{ matrix.ext }}
             objcopy --add-gnu-debuglink=release/omnitype${{ matrix.ext }}.debug release/omnitype${{ matrix.ext }}
+          elif [[ "${{ matrix.target }}" == *"apple"* ]]; then
+            # On macOS, just strip the binary (debug info is in separate .dSYM files)
+            strip release/omnitype${{ matrix.ext }}
           fi
           
           # Create checksums
