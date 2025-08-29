@@ -72,11 +72,10 @@ jobs:
           fi
           
           # Set output for release body (escape newlines properly)
-          {
-            echo 'changes<<EOF'
-            cat CHANGES.md
-            echo EOF
-          } >> $GITHUB_OUTPUT
+          CHANGES_CONTENT=$(cat CHANGES.md)
+          echo "changes<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGES_CONTENT" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: ncipollo/release-action@v1
