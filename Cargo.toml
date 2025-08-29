@@ -28,6 +28,7 @@ tree-sitter-python = { version = "0.20", optional = true }
 unicode-width = "0.1"
 unicode-segmentation = "1.10"
 walkdir = "2.3"
+wait-timeout = "0.2.0"
 
 # TUI dependencies (single versions)
 crossterm = "0.27"

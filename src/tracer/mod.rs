@@ -5,6 +5,7 @@ use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
+use wait_timeout::ChildExt;
 
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use base64::Engine;
@@ -110,15 +111,12 @@ impl RuntimeTracer {
         // Write the instrumented content
         fs::write(temp_file.path(), instrumented_content)?;
 
-        // Execute the instrumented Python file
--        let output = Command::new("python3")
--            .arg(temp_file.path())
--            .stdout(Stdio::piped())
--            .stderr(Stdio::piped())
         // Allow override of the Python interpreter and prevent hangs with a timeout
         let python = std::env::var("OMNITYPE_PYTHON")
             .or_else(|_| std::env::var("PYTHON"))
             .unwrap_or_else(|_| "python3".to_string());
+            
+        // Execute the instrumented Python file
         let mut child = Command::new(python)
             .arg(temp_file.path())
             .stdout(Stdio::piped())
@@ -127,7 +125,6 @@ impl RuntimeTracer {
             .map_err(|e| Error::Io(std::io::Error::other(format!("Failed to spawn Python: {}", e))))?;
 
         // Wait up to 60 seconds for Python to finish
-        use wait_timeout::ChildExt;
         let status = child
             .wait_timeout(std::time::Duration::from_secs(60))
             .map_err(|e| Error::Io(std::io::Error::other(format!("Error waiting for Python: {}", e))))?;
