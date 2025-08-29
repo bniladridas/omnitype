@@ -6,6 +6,9 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use tempfile::NamedTempFile;
 
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use base64::Engine;
+
 use crate::error::{Error, Result};
 use crate::types::Type;
 
@@ -295,6 +298,7 @@ _tracer.print_traces()
     ) -> Result<String> {
         let content = fs::read_to_string(path)?;
 
+        let encoded_content = BASE64_STANDARD.encode(&content);
         let tracer_code = format!(
             r#"
 import sys
@@ -392,8 +396,9 @@ class TypeTracer:
 
 _tracer = TypeTracer()
 
-# Execute the original code
-exec('''{original_code}''')
+# Execute the original code (safely using base64 encoding)
+import base64
+exec(base64.b64decode('{original_code}').decode('utf-8'))
 
 # Run the specific test function with tracing enabled
 current_module = sys.modules[__name__]
@@ -410,7 +415,7 @@ if hasattr(current_module, '{test_name}'):
 
 _tracer.print_traces()
 "#,
-            original_code = content,
+            original_code = encoded_content,
             test_name = test_name
         );
 
