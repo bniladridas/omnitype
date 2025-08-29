@@ -49,6 +49,6 @@ The following files contain version references:
 
 - Cargo.toml - Main project version (automatically updated by bump script)
 - README.md - Badge showing Rust version requirement
-- .github/ISSUE_TEMPLATE/*.md - Example version numbers in templates
+- .github/ISSUE_TEMPLATE/*.md - Example version numbers in issue templates
 - CONTRIBUTING.md - Example version numbers
 - SECURITY.md - References to patch versions
