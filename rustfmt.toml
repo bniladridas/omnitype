@@ -7,7 +7,7 @@ use_small_heuristics = "Max"
 
 # Imports
 imports_granularity = "Module"
-imports_layout = "Horizontal_Merge"
+imports_layout = "HorizontalVertical"
 merge_imports = true
 reorder_imports = true
 
