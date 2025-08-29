@@ -251,8 +251,11 @@ class TypeTracer:
     
     def trace_calls(self, frame, event, arg):
         if self.in_trace:
-            return
-        
+            return self.trace_calls
+        # Only trace the instrumented file
+        if frame.f_code.co_filename != __file__:
+            return self.trace_calls
+
         self.in_trace = True
         try:
             if event == 'call':
@@ -264,9 +267,9 @@ class TypeTracer:
                     for name in arg_names:
                         if name in frame.f_locals and name != 'self':
                             args.append(frame.f_locals[name])
-                    
+
                     self.call_stack.append((func_name, args))
-            
+
             elif event == 'return':
                 if self.call_stack:
                     func_name, args = self.call_stack.pop()
@@ -274,9 +277,8 @@ class TypeTracer:
                         self.trace_function_call(func_name, args, arg)
         finally:
             self.in_trace = False
-        
+
         return self.trace_calls
-    
     def print_traces(self):
         print("TRACE_OUTPUT_START")
         print(json.dumps(self.traces, indent=2))
