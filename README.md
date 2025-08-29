@@ -72,9 +72,9 @@
 > cargo clippy --fix --all-targets --all-features  # Auto-fix clippy issues
 > 
 > # Install required tools for full CI compatibility
+> rustup install nightly                        # Required for cargo-udeps
 > cargo install cargo-udeps                     # For unused dependency checking
 > cargo install cargo-audit                     # For security auditing
-> rustup install nightly                        # Required for cargo-udeps
 > 
 > # Git workflow after fixes
 > git add .
