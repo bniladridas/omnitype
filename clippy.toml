@@ -1,0 +1,81 @@
+# Documentation
+# https://rust-lang.github.io/rust-clippy/master/index.html
+
+# Documentation
+# https://rust-lang.github.io/rust-clippy/master/index.html
+
+# Documentation
+# https://rust-lang.github.io/rust-clippy/master/index.html
+
+# Documentation
+# https://rust-lang.github.io/rust-clippy/master/index.html
+
+# Documentation
+# https://rust-lang.github.io/rust-clippy/master/index.html
+
+doc-valid-idents = ["DoxyUnexposed"]
+
+# Allow some lints that are too strict for general use
+allow = [
+    "module_name_repetitions",
+    "missing_errors_doc",
+    "must_use_candidate",
+    "missing_panics_doc",
+    "missing_safety_doc"
+]
+
+# Deny warnings in tests
+deny = [
+    "clippy::all",
+    "clippy::pedantic",
+    "clippy::nursery",
+    "clippy::cargo"
+]
+
+# Allow some pedantic lints that are too strict
+allow-pedantic = [
+    "doc_markdown",
+    "module_name_repetitions",
+    "missing_errors_doc",
+    "missing_panics_doc"
+]
+
+# Configure specific lints
+[clippy]
+# Style
+enum_variant_names = { allow_private = true }
+too_many_arguments = { max = 6 }
+too_many_lines = { max = 300 }
+module_name_repetitions = { max = 1 }
+
+# Correctness
+debug_assert_with_mut_call = "deny"
+empty_loop = "deny"
+mem_forget = "deny"
+unimplemented = "deny"
+unreachable = "deny"
+unreachable_pub = "deny"
+
+# Performance
+boxed_local = "deny"
+let_underscore_must_use = "deny"
+mem_forget = "deny"
+mem_replace_with_default = "deny"
+mem_replace_with_uninit = "deny"
+missing_const_for_fn = "warn"
+
+# Complexity
+cyclomatic_complexity = { max = 15 }
+function_max_lines = { max = 100 }
+too_many_arguments = { max = 7 }
+too_many_lines = { max = 500 }
+
+# Documentation
+missing_errors_doc = "warn"
+missing_panics_doc = "warn"
+missing_safety_doc = "warn"
+
+# Tests
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
