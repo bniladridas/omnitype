@@ -59,7 +59,6 @@ unreachable_pub = "deny"
 # Performance
 boxed_local = "deny"
 let_underscore_must_use = "deny"
-mem_forget = "deny"
 mem_replace_with_default = "deny"
 mem_replace_with_uninit = "deny"
 missing_const_for_fn = "warn"
