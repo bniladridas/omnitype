@@ -1,7 +1,9 @@
 //! Type system definitions for omnitype.
 
-use std::collections::HashMap;
+use std::cmp::Ordering;
+use std::collections::{BTreeSet, HashMap};
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 use serde::{Deserialize, Serialize};
 
@@ -16,7 +18,7 @@ impl fmt::Display for TypeVar {
 }
 
 /// Represents a type in the omnitype system.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Type {
     /// The unknown type (used during inference)
     Unknown,
@@ -78,6 +80,175 @@ pub enum Type {
         /// Type parameters
         params: Vec<Type>,
     },
+}
+
+impl Hash for Type {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+        match self {
+            Type::List(inner) => inner.hash(state),
+            Type::Dict(k, v) => {
+                k.hash(state);
+                v.hash(state);
+            },
+            Type::Tuple(types) => types.hash(state),
+            Type::Set(inner) => inner.hash(state),
+            Type::Function { params, returns } => {
+                params.hash(state);
+                returns.hash(state);
+            },
+            Type::Union(types) => types.hash(state),
+            Type::Var(var) => var.hash(state),
+            Type::Named(name) => name.hash(state),
+            Type::Generic { name, params } => {
+                name.hash(state);
+                params.hash(state);
+            },
+            _ => (),
+        }
+    }
+}
+
+impl PartialEq for Type {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Type::List(a), Type::List(b)) => a == b,
+            (Type::Dict(ak, av), Type::Dict(bk, bv)) => ak == bk && av == bv,
+            (Type::Tuple(a), Type::Tuple(b)) => a == b,
+            (Type::Set(a), Type::Set(b)) => a == b,
+            (
+                Type::Function { params: a_params, returns: a_ret },
+                Type::Function { params: b_params, returns: b_ret },
+            ) => a_params == b_params && a_ret == b_ret,
+            (Type::Union(a), Type::Union(b)) => a == b,
+            (Type::Var(a), Type::Var(b)) => a == b,
+            (Type::Named(a), Type::Named(b)) => a == b,
+            (
+                Type::Generic { name: a_name, params: a_params },
+                Type::Generic { name: b_name, params: b_params },
+            ) => a_name == b_name && a_params == b_params,
+            (a, b) => std::mem::discriminant(a) == std::mem::discriminant(b),
+        }
+    }
+}
+
+impl Eq for Type {}
+
+impl PartialOrd for Type {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Type {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match (self, other) {
+            (Type::Unknown, Type::Unknown) => Ordering::Equal,
+            (Type::None, Type::None) => Ordering::Equal,
+            (Type::Any, Type::Any) => Ordering::Equal,
+            (Type::Bool, Type::Bool) => Ordering::Equal,
+            (Type::Int, Type::Int) => Ordering::Equal,
+            (Type::Float, Type::Float) => Ordering::Equal,
+            (Type::Str, Type::Str) => Ordering::Equal,
+            (Type::Bytes, Type::Bytes) => Ordering::Equal,
+            (Type::List(a), Type::List(b)) => a.cmp(b),
+            (Type::Dict(ak, av), Type::Dict(bk, bv)) => match ak.cmp(bk) {
+                Ordering::Equal => av.cmp(bv),
+                ord => ord,
+            },
+            (Type::Tuple(a), Type::Tuple(b)) => a.cmp(b),
+            (Type::Set(a), Type::Set(b)) => a.cmp(b),
+            (
+                Type::Function { params: a_params, returns: a_ret },
+                Type::Function { params: b_params, returns: b_ret },
+            ) => match a_params.cmp(b_params) {
+                Ordering::Equal => a_ret.cmp(b_ret),
+                ord => ord,
+            },
+            (Type::Union(a), Type::Union(b)) => a.cmp(b),
+            (Type::Var(a), Type::Var(b)) => a.0.cmp(&b.0),
+            (Type::Named(a), Type::Named(b)) => a.cmp(b),
+            (
+                Type::Generic { name: a_name, params: a_params },
+                Type::Generic { name: b_name, params: b_params },
+            ) => match a_name.cmp(b_name) {
+                Ordering::Equal => a_params.cmp(b_params),
+                ord => ord,
+            },
+            (a, b) => {
+                // Compare discriminants by matching all possible variants
+                match (a, b) {
+                    (Type::Unknown, _) => Ordering::Less,
+                    (_, Type::Unknown) => Ordering::Greater,
+                    (Type::None, _) => Ordering::Less,
+                    (_, Type::None) => Ordering::Greater,
+                    (Type::Any, _) => Ordering::Less,
+                    (_, Type::Any) => Ordering::Greater,
+                    (Type::Bool, _) => Ordering::Less,
+                    (_, Type::Bool) => Ordering::Greater,
+                    (Type::Int, _) => Ordering::Less,
+                    (_, Type::Int) => Ordering::Greater,
+                    (Type::Float, _) => Ordering::Less,
+                    (_, Type::Float) => Ordering::Greater,
+                    (Type::Str, _) => Ordering::Less,
+                    (_, Type::Str) => Ordering::Greater,
+                    (Type::Bytes, _) => Ordering::Less,
+                    (_, Type::Bytes) => Ordering::Greater,
+                    (Type::List(_), _) => Ordering::Less,
+                    (_, Type::List(_)) => Ordering::Greater,
+                    (Type::Dict(_, _), _) => Ordering::Less,
+                    (_, Type::Dict(_, _)) => Ordering::Greater,
+                    (Type::Tuple(_), _) => Ordering::Less,
+                    (_, Type::Tuple(_)) => Ordering::Greater,
+                    (Type::Set(_), _) => Ordering::Less,
+                    (_, Type::Set(_)) => Ordering::Greater,
+                    (Type::Function { .. }, _) => Ordering::Less,
+                    (_, Type::Function { .. }) => Ordering::Greater,
+                    (Type::Union(_), _) => Ordering::Less,
+                    (_, Type::Union(_)) => Ordering::Greater,
+                    (Type::Var(_), _) => Ordering::Less,
+                    (_, Type::Var(_)) => Ordering::Greater,
+                    (Type::Named(_), _) => Ordering::Less,
+                    (_, Type::Named(_)) => Ordering::Greater,
+                    (Type::Generic { .. }, _) => Ordering::Equal,
+                }
+            },
+        }
+    }
+}
+
+impl Type {
+    /// Creates a normalized union type by sorting and deduplicating the input types.
+    /// This ensures that the same set of types always produces the same union,
+    /// regardless of the order of input types.
+    pub fn union_of(types: Vec<Type>) -> Type {
+        if types.is_empty() {
+            return Type::Unknown;
+        }
+
+        // Flatten nested unions and collect unique types
+        let mut unique_types = BTreeSet::new();
+        for ty in types {
+            match ty {
+                Type::Union(nested_types) => {
+                    for nested_ty in nested_types {
+                        unique_types.insert(nested_ty);
+                    }
+                },
+                _ => {
+                    unique_types.insert(ty);
+                },
+            }
+        }
+
+        // If there's only one unique type, return it directly
+        if unique_types.len() == 1 {
+            return unique_types.into_iter().next().unwrap();
+        }
+
+        // Convert back to a sorted vector
+        Type::Union(unique_types.into_iter().collect())
+    }
 }
 
 impl Default for Type {
