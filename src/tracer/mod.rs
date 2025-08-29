@@ -623,17 +623,15 @@ mod tests {
 
     #[test]
     fn test_python_type_conversion() {
-        let tracer = RuntimeTracer::new(false);
-
-        assert_eq!(tracer.convert_python_type_to_our_type("int"), Type::Int);
-        assert_eq!(tracer.convert_python_type_to_our_type("str"), Type::Str);
-        assert_eq!(tracer.convert_python_type_to_our_type("None"), Type::None);
+        assert_eq!(RuntimeTracer::convert_python_type_to_our_type("int"), Type::Int);
+        assert_eq!(RuntimeTracer::convert_python_type_to_our_type("str"), Type::Str);
+        assert_eq!(RuntimeTracer::convert_python_type_to_our_type("None"), Type::None);
 
         // Test complex types
-        let list_type = tracer.convert_python_type_to_our_type("List[int]");
+        let list_type = RuntimeTracer::convert_python_type_to_our_type("List[int]");
         assert_eq!(list_type, Type::List(Box::new(Type::Int)));
 
-        let dict_type = tracer.convert_python_type_to_our_type("Dict[str, int]");
+        let dict_type = RuntimeTracer::convert_python_type_to_our_type("Dict[str, int]");
         assert_eq!(dict_type, Type::Dict(Box::new(Type::Str), Box::new(Type::Int)));
     }
 
