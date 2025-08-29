@@ -306,11 +306,19 @@ for name in dir(current_module):
     obj = getattr(current_module, name)
     if callable(obj) and name.startswith('test_') and not name.startswith('_'):
         try:
+            sig = inspect.signature(obj)
+            let has_required = any(
+                p.default is inspect._empty
+                and p.kind in (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
+                for p in sig.parameters.values()
+            )
+            if has_required:
+                print(f"Skipping {name}: requires arguments")
+                continue
             print(f"Running test: {name}")
-            result = obj()
+            obj()
         except Exception as e:
             print(f"Error in test {name}: {e}")
-
 # Note: Other functions will be traced when called by test functions
 # This avoids the security risk of calling arbitrary functions with guessed arguments
 
