@@ -7,11 +7,11 @@
 #![warn(rustdoc::missing_crate_level_docs)]
 
 pub mod analyzer;
-pub mod constraint_solver;
+pub mod solver;
 pub mod error;
 pub mod fixer;
 pub mod parser;
-pub mod runtime_tracer;
+pub mod tracer;
 pub mod types;
 pub mod utils;
 
