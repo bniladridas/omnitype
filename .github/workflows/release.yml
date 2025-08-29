@@ -54,7 +54,9 @@ jobs:
           if [ -z "$PREVIOUS_TAG" ]; then
               echo "**Initial Release**" >> CHANGES.md
               echo "" >> CHANGES.md
-              echo "This is the first release of OmniType!" >> CHANGES.md
+              echo "This is the first release of omnitype!" >> CHANGES.md
+              echo "" >> CHANGES.md
+              echo "Learn more about Harper Token: https://github.com/harpertoken" >> CHANGES.md
               echo "" >> CHANGES.md
               echo "### All Commits" >> CHANGES.md
               git log --pretty=format:'- %h %s (%an)' --reverse >> CHANGES.md
@@ -138,6 +140,7 @@ jobs:
           override: true
 
       - name: Build
+        shell: bash
         run: |
           # Build with release profile and debug symbols
           RUSTFLAGS='-C debuginfo=2' cargo build --release --target ${{ matrix.target }}
@@ -157,7 +160,11 @@ jobs:
           
           # Create checksums
           cd release
-          shasum -a 256 omnitype* > SHA256SUMS
+          if command -v shasum &> /dev/null; then
+            shasum -a 256 omnitype* > SHA256SUMS
+          else
+            sha256sum omnitype* > SHA256SUMS
+          fi
           cd ..
 
       - name: Upload Artifact
