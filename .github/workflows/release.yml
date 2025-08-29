@@ -24,6 +24,8 @@ jobs:
 
       - name: Generate Changelog and Diffs
         id: changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Install GitHub CLI
           if ! command -v gh &> /dev/null; then
@@ -35,29 +37,46 @@ jobs:
               fi
           fi
           
-          # Generate code diffs
+          # Generate code diffs using the script
           mkdir -p scripts
-          cp .github/scripts/generatecodediffs.sh scripts/
-          chmod +x scripts/generatecodediffs.sh
-          ./scripts/generatecodediffs.sh
+          cp .github/scripts/generate.sh scripts/
+          chmod +x scripts/generate.sh
+          ./scripts/generate.sh
+          
+          # Get the current tag and find previous tag (if any)
+          CURRENT_TAG="${{ github.ref_name }}"
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 ${{ github.ref }}^ 2>/dev/null || echo "")
           
           # Generate basic changelog
-          echo "## Changes in ${{ github.ref_name }}" > CHANGES.md
+          echo "## Changes in $CURRENT_TAG" > CHANGES.md
           echo "" >> CHANGES.md
-          echo "### Commits" >> CHANGES.md
-          git log --pretty=format:'- %h %s (%an)' $(git describe --tags --abbrev=0 ${{ github.ref }}^)..${{ github.ref }} >> CHANGES.md
           
-          # Append code diffs
-          echo "" >> CHANGES.md
-          echo "### Code Diffs" >> CHANGES.md
-          echo "" >> CHANGES.md
-          echo '```diff' >> CHANGES.md
-          git diff $(git describe --tags --abbrev=0 ${{ github.ref }}^)..${{ github.ref }} -- . ':(exclude)*.md' ':(exclude)Cargo.lock' >> CHANGES.md || echo "No code changes" >> CHANGES.md
-          echo '```' >> CHANGES.md
+          if [ -z "$PREVIOUS_TAG" ]; then
+              echo "**Initial Release**" >> CHANGES.md
+              echo "" >> CHANGES.md
+              echo "This is the first release of OmniType!" >> CHANGES.md
+              echo "" >> CHANGES.md
+              echo "### All Commits" >> CHANGES.md
+              git log --pretty=format:'- %h %s (%an)' --reverse >> CHANGES.md
+          else
+              echo "### Commits since $PREVIOUS_TAG" >> CHANGES.md
+              git log --pretty=format:'- %h %s (%an)' ${PREVIOUS_TAG}..${{ github.ref }} >> CHANGES.md
+              
+              # Append code diffs for non-initial releases
+              echo "" >> CHANGES.md
+              echo "### Code Diffs" >> CHANGES.md
+              echo "" >> CHANGES.md
+              echo '```diff' >> CHANGES.md
+              git diff ${PREVIOUS_TAG}..${{ github.ref }} -- . ':(exclude)*.md' ':(exclude)Cargo.lock' >> CHANGES.md || echo "No code changes" >> CHANGES.md
+              echo '```' >> CHANGES.md
+          fi
           
-          # Set output for release body
-          CHANGES=$(cat CHANGES.md)
-          echo "changes=$CHANGES" >> $GITHUB_OUTPUT
+          # Set output for release body (escape newlines properly)
+          {
+            echo 'changes<<EOF'
+            cat CHANGES.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: ncipollo/release-action@v1
