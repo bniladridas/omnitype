@@ -1,3 +1,7 @@
+[![CI](https://github.com/bniladridas/omnitype/workflows/CI/badge.svg)](https://github.com/bniladridas/omnitype/actions)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/rust-1.89%2B-orange.svg)](https://www.rust-lang.org)
+
 > [!TIP]
 > Available commands for omnitype:
 > ```bash
@@ -93,3 +97,7 @@
 > - Use `*-threshold` settings instead of allow/deny lists in `clippy.toml`
 > - Common thresholds: `cognitive-complexity-threshold = 15`, `too-many-arguments-threshold = 7`
 > - For recursive functions, add `#[allow(clippy::only_used_in_recursion)]` attribute
+
+A hybrid type checker for Python and other dynamic languages.
+
+— @omnitype by [harper](https://github.com/harpertoken) 
