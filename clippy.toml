@@ -1,18 +1,6 @@
 # Documentation
 # https://rust-lang.github.io/rust-clippy/master/index.html
 
-# Documentation
-# https://rust-lang.github.io/rust-clippy/master/index.html
-
-# Documentation
-# https://rust-lang.github.io/rust-clippy/master/index.html
-
-# Documentation
-# https://rust-lang.github.io/rust-clippy/master/index.html
-
-# Documentation
-# https://rust-lang.github.io/rust-clippy/master/index.html
-
 doc-valid-idents = ["DoxyUnexposed"]
 
 # Allow some lints that are too strict for general use
@@ -44,7 +32,6 @@ allow-pedantic = [
 [clippy]
 # Style
 enum_variant_names = { allow_private = true }
-too_many_arguments = { max = 6 }
 too_many_lines = { max = 300 }
 module_name_repetitions = { max = 1 }
 
