@@ -14,10 +14,16 @@ if ! command -v gh &> /dev/null; then
     fi
 fi
 
-# Authenticate with GitHub
+# Set up git config for the action
 git config --global user.name "Release Bot"
 git config --global user.email "release-bot@example.com"
-gh auth status || gh auth login
+
+# Check if we're in GitHub Actions and have a token
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+    echo "$GITHUB_TOKEN" | gh auth login --with-token
+else
+    echo "Warning: No GITHUB_TOKEN found, skipping GitHub CLI authentication"
+fi
 
 # Get the latest two tags
 LATEST_TAG=$(git describe --tags --abbrev=0)
@@ -70,5 +76,3 @@ git log --pretty=format:'- %s' ${PREVIOUS_TAG}..${LATEST_TAG} | grep -i 'perf\|s
 
 echo ""
 echo "Release notes generated in $OUTPUT_FILE"
-
-
