@@ -32,7 +32,6 @@ format_macro_bodies = true
 
 # Tests
 format_strings = true
-format_macro_matchers = true
 
 # Error Handling
 error_on_line_overflow = true
@@ -64,4 +63,3 @@ where_single_line = false
 use_field_init_shorthand = true
 
 # Control Flow
-control_brace_style = "AlwaysSameLine"
