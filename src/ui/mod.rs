@@ -648,7 +648,7 @@ fn list_files(dir: &Path) -> io::Result<Vec<PathBuf>> {
             _ => a_path
                 .file_name()
                 .unwrap_or_default()
-                .cmp(&b_path.file_name().unwrap_or_default()),
+                .cmp(b_path.file_name().unwrap_or_default()),
         }
     });
 
