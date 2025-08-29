@@ -1,10 +1,10 @@
-# Contributing to harper's omnitype
+# Contributing to Harper's Omnitype
 
 Thank you for your interest in contributing. This document provides practical guidelines for contributors.
 
 ## Code of Conduct
 
-This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). Participation requires adherence to it.
+This project follows a [Code of Conduct](./CODE_OF_CONDUCT.md). Participation requires adherence to it.
 
 ## Getting Started
 
@@ -84,27 +84,27 @@ cargo test test_analyzer_initialization
 Debug:
 
 ```bash
-RUST_LOG=debug cargo run -- check src/
+RUST_LOG=debug cargo run -- check ./src/
 RUST_BACKTRACE=1 cargo test
 ```
 
-Performance:
+Performance profiling:
 
 ```bash
 cargo build --release
-perf record cargo run --release -- check large_project/
+perf record cargo run --release -- check ./large_project/
 perf report
 ```
 
 ## Architecture
 
-* `src/analyzer/` — type analysis
-* `src/parser/` — source parsing
-* `src/fixer/` — annotation fixes
-* `src/types/` — type definitions
-* `src/ui/` — terminal UI
-* `src/error.rs` — error handling
-* `src/main.rs` — CLI entry
+* `src/analyzer/` — Type analysis engine
+* `src/parser/` — Source code parsing
+* `src/fixer/` — Annotation fixes and suggestions
+* `src/types/` — Type definitions and structures
+* `src/ui/` — Terminal user interface
+* `src/error.rs` — Error handling and reporting
+* `src/main.rs` — Command-line interface entry point
 
 ## Standards
 
@@ -115,22 +115,22 @@ perf report
 
 ### Commit Messages
 
-Conventional commits:
+Follow conventional commit format:
 
-* `feat:` new feature
-* `fix:` bug fix
-* `docs:` documentation
-* `style:` formatting
-* `refactor:` restructuring
-* `test:` tests
-* `chore:` maintenance
+* `feat:` A new feature
+* `fix:` A bug fix
+* `docs:` Documentation only changes
+* `style:` Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+* `refactor:` A code change that neither fixes a bug nor adds a feature
+* `test:` Adding missing tests or correcting existing tests
+* `chore:` Changes to the build process or auxiliary tools and libraries
 
 ### Testing
 
-* Unit tests near code
-* Integration tests in `tests/`
-* Descriptive test names
-* Test both success and error cases
+* Unit tests should be placed near the code they test
+* Integration tests should be placed in the `tests/` directory
+* Use descriptive test names that explain what is being tested
+* Test both success and error cases to ensure comprehensive coverage
 
 ## Help
 
