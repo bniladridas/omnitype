@@ -38,7 +38,7 @@ impl TypeTrace {
         if let Some(types) = self.variables.get(name) {
             let mut seen = HashSet::new();
             let mut unique_types = Vec::new();
-            
+
             for t in types {
                 if seen.insert(t) {
                     unique_types.push(t);
@@ -100,8 +100,9 @@ impl RuntimeTracer {
         };
 
         // Create a temporary file with proper cleanup handling
-        let temp_file = NamedTempFile::with_suffix(".py")
-            .map_err(|e| Error::Io(std::io::Error::other(format!("Failed to create temp file: {}", e))))?;
+        let temp_file = NamedTempFile::with_suffix(".py").map_err(|e| {
+            Error::Io(std::io::Error::other(format!("Failed to create temp file: {}", e)))
+        })?;
 
         // Write the instrumented content
         fs::write(temp_file.path(), instrumented_content)?;
@@ -248,12 +249,14 @@ class TypeTracer:
 
 _tracer = TypeTracer()
 
-"#.to_string();
+"#
+        .to_string();
 
         // Append the original code directly
         let mut full_code = tracer_code;
         full_code.push_str(&content);
-        full_code.push_str(r#"
+        full_code.push_str(
+            r#"
 
 # Set up call tracing
 sys.settrace(_tracer.trace_calls)
@@ -278,7 +281,8 @@ for name in dir(current_module):
 sys.settrace(None)
 
 _tracer.print_traces()
-"#);
+"#,
+        );
 
         Ok(full_code)
     }
@@ -291,7 +295,8 @@ _tracer.print_traces()
     ) -> Result<String> {
         let content = fs::read_to_string(path)?;
 
-        let tracer_code = format!(r#"
+        let tracer_code = format!(
+            r#"
 import sys
 import json
 import types
@@ -404,7 +409,7 @@ if hasattr(current_module, '{test_name}'):
         sys.settrace(None)
 
 _tracer.print_traces()
-"#, 
+"#,
             original_code = content,
             test_name = test_name
         );
@@ -621,23 +626,23 @@ mod tests {
 
         // Add duplicate types for the same variable
         trace.add_variable("y".to_string(), Type::Int);
-        trace.add_variable("y".to_string(), Type::Int);  // duplicate
+        trace.add_variable("y".to_string(), Type::Int); // duplicate
         trace.add_variable("y".to_string(), Type::Str);
-        trace.add_variable("y".to_string(), Type::Int);  // another duplicate
-        trace.add_variable("y".to_string(), Type::Str);  // another duplicate
+        trace.add_variable("y".to_string(), Type::Int); // another duplicate
+        trace.add_variable("y".to_string(), Type::Str); // another duplicate
 
         let y_types = trace.get_variable_types("y");
-        
+
         // Should only have 2 unique types despite 5 additions
         assert_eq!(y_types.len(), 2);
         assert!(y_types.contains(&&Type::Int));
         assert!(y_types.contains(&&Type::Str));
-        
+
         // Test with complex types
         trace.add_variable("z".to_string(), Type::List(Box::new(Type::Int)));
-        trace.add_variable("z".to_string(), Type::List(Box::new(Type::Int)));  // duplicate
+        trace.add_variable("z".to_string(), Type::List(Box::new(Type::Int))); // duplicate
         trace.add_variable("z".to_string(), Type::List(Box::new(Type::Str)));
-        
+
         let z_types = trace.get_variable_types("z");
         assert_eq!(z_types.len(), 2);
         assert!(z_types.contains(&&Type::List(Box::new(Type::Int))));
