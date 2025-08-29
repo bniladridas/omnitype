@@ -187,7 +187,8 @@ fn main() -> io::Result<()> {
                                 for (name, types) in &traces.variables {
                                     let unique_types: std::collections::HashSet<String> =
                                         types.iter().map(|t| t.to_string()).collect();
-                                    let mut type_list: Vec<String> = unique_types.into_iter().collect();
+                                    let mut type_list: Vec<String> =
+                                        unique_types.into_iter().collect();
                                     type_list.sort();
                                     println!("  {}: {}", name, type_list.join(" | "));
                                 }
