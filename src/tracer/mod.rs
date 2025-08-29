@@ -111,14 +111,45 @@ impl RuntimeTracer {
         fs::write(temp_file.path(), instrumented_content)?;
 
         // Execute the instrumented Python file
-        let output = Command::new("python3")
+-        let output = Command::new("python3")
+-            .arg(temp_file.path())
+-            .stdout(Stdio::piped())
+-            .stderr(Stdio::piped())
+        // Allow override of the Python interpreter and prevent hangs with a timeout
+        let python = std::env::var("OMNITYPE_PYTHON")
+            .or_else(|_| std::env::var("PYTHON"))
+            .unwrap_or_else(|_| "python3".to_string());
+        let mut child = Command::new(python)
             .arg(temp_file.path())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .output();
+            .spawn()
+            .map_err(|e| Error::Io(std::io::Error::other(format!("Failed to spawn Python: {}", e))))?;
 
+        // Wait up to 60 seconds for Python to finish
+        use wait_timeout::ChildExt;
+        let status = child
+            .wait_timeout(std::time::Duration::from_secs(60))
+            .map_err(|e| Error::Io(std::io::Error::other(format!("Error waiting for Python: {}", e))))?;
+        let output = if let Some(status) = status {
+            let mut out = Vec::new();
+            let mut err = Vec::new();
+            if let Some(mut stdout) = child.stdout.take() {
+                use std::io::Read;
+                stdout.read_to_end(&mut out).ok();
+            }
+            if let Some(mut stderr) = child.stderr.take() {
+                use std::io::Read;
+                stderr.read_to_end(&mut err).ok();
+            }
+            Ok(std::process::Output { status, stdout: out, stderr: err })
+        } else {
+            let _ = child.kill();
+            Err(Error::Io(std::io::Error::other("Python execution timed out")))
+        };
+ 
         // temp_file is automatically cleaned up when it goes out of scope
-
+ 
         match output {
             Ok(output) => {
                 if !output.status.success() {
@@ -131,10 +162,10 @@ impl RuntimeTracer {
                         stderr
                     ))));
                 }
-
+ 
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 self.parse_trace_output(&stdout)?;
-
+ 
                 if self.verbose {
                     println!("Trace collection completed successfully");
                     self.print_trace_summary();
