@@ -1,6 +1,6 @@
 //! Type system definitions for omnitype.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeSet};
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -16,7 +16,7 @@ impl fmt::Display for TypeVar {
 }
 
 /// Represents a type in the omnitype system.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Type {
     /// The unknown type (used during inference)
     Unknown,
@@ -78,6 +78,40 @@ pub enum Type {
         /// Type parameters
         params: Vec<Type>,
     },
+}
+
+impl Type {
+    /// Creates a normalized union type by sorting and deduplicating the input types.
+    /// This ensures that the same set of types always produces the same union,
+    /// regardless of the order of input types.
+    pub fn union_of(types: Vec<Type>) -> Type {
+        if types.is_empty() {
+            return Type::Unknown;
+        }
+        
+        // Flatten nested unions and collect unique types
+        let mut unique_types = BTreeSet::new();
+        for ty in types {
+            match ty {
+                Type::Union(nested_types) => {
+                    for nested_ty in nested_types {
+                        unique_types.insert(nested_ty);
+                    }
+                }
+                _ => {
+                    unique_types.insert(ty);
+                }
+            }
+        }
+        
+        // If there's only one unique type, return it directly
+        if unique_types.len() == 1 {
+            return unique_types.into_iter().next().unwrap();
+        }
+        
+        // Convert back to a sorted vector
+        Type::Union(unique_types.into_iter().collect())
+    }
 }
 
 impl Default for Type {
