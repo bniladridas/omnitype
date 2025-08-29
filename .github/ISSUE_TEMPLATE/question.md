@@ -8,7 +8,7 @@ assignees: ''
 
 ## Question
 
-A clear and concise question about OmniType.
+A clear and concise question about omnitype.
 
 ## Context
 
