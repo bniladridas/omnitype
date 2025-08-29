@@ -457,7 +457,8 @@ _tracer.print_traces()
     fn parse_trace_output(&mut self, output: &str) -> Result<()> {
         // Look for trace output between markers
         if let Some(start) = output.find("TRACE_OUTPUT_START") {
-            if let Some(end) = output.find("TRACE_OUTPUT_END") {
+            if let Some(end) = output[start..].find("TRACE_OUTPUT_END") {
+                let end = start + end;
                 let trace_json = &output[start + "TRACE_OUTPUT_START".len()..end].trim();
 
                 match serde_json::from_str::<serde_json::Value>(trace_json) {
