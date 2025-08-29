@@ -5,8 +5,8 @@ use std::path::Path;
 use tree_sitter::{Node, Tree};
 
 use crate::error::Result;
-use crate::types::Type;
 use crate::parser::Parser;
+use crate::types::Type;
 
 /// Simple diagnostic record produced by lightweight analysis.
 #[derive(Debug, Clone, serde::Serialize)]
@@ -52,31 +52,29 @@ impl Default for Analyzer {
 impl Analyzer {
     /// Creates a new analyzer with an empty type environment.
     pub fn new() -> Self {
-        Self {
-            type_env: HashMap::new(),
-        }
+        Self { type_env: HashMap::new() }
     }
-    
+
     /// Analyzes a syntax tree and infers types.
     pub fn analyze(&mut self, tree: &Tree, source: &[u8]) -> Result<()> {
         let root_node = tree.root_node();
         self.visit_node(&root_node, source)?;
         Ok(())
     }
-    
+
     /// Visits a node in the syntax tree and processes it.
     fn visit_node(&mut self, node: &Node, source: &[u8]) -> Result<()> {
         // TODO: Implement node visiting logic for type inference
-        
+
         // Recursively visit children
         let mut cursor = node.walk();
         for child in node.children(&mut cursor) {
             self.visit_node(&child, source)?;
         }
-        
+
         Ok(())
     }
-    
+
     /// Infers the type of an expression node.
     #[allow(dead_code)]
     fn infer_expression_type(&self, _node: &Node, _source: &[u8]) -> Result<Type> {
@@ -118,7 +116,9 @@ impl Analyzer {
                             let p_kind = p.kind();
                             let is_typed = p_kind == "typed_parameter";
                             // If it's clearly a parameter and not typed, flag it
-                            if !is_typed && (p_kind == "identifier" || p_kind == "default_parameter") {
+                            if !is_typed
+                                && (p_kind == "identifier" || p_kind == "default_parameter")
+                            {
                                 let pos = p.start_position();
                                 diagnostics.push(Diagnostic {
                                     path: path.to_string_lossy().to_string(),
@@ -142,9 +142,9 @@ impl Analyzer {
                             severity: "warning".to_string(),
                         });
                     }
-                }
+                },
                 "class_definition" => class_count += 1,
-                _ => {}
+                _ => {},
             }
 
             let mut child_cursor = node.walk();
@@ -165,7 +165,7 @@ impl Analyzer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_analyzer_initialization() {
         let analyzer = Analyzer::new();

@@ -20,40 +20,40 @@ impl fmt::Display for TypeVar {
 pub enum Type {
     /// The unknown type (used during inference)
     Unknown,
-    
+
     /// The `None` type
     None,
-    
+
     /// The `Any` type (top type)
     Any,
-    
+
     /// Boolean type (true/false)
     Bool,
-    
+
     /// Integer number type
     Int,
-    
+
     /// Floating-point number type
     Float,
-    
+
     /// Unicode string type
     Str,
-    
+
     /// Binary data type
     Bytes,
-    
+
     /// Homogeneous list/array type
     List(Box<Type>),
-    
+
     /// Dictionary/map type with key and value types
-    Dict(Box<Type>, Box<Type>),  // key type, value type
-    
+    Dict(Box<Type>, Box<Type>), // key type, value type
+
     /// Fixed-size heterogeneous sequence type
     Tuple(Vec<Type>),
-    
+
     /// Unordered collection of unique elements
     Set(Box<Type>),
-    
+
     /// Function type with parameter and return types
     Function {
         /// List of parameter types
@@ -61,16 +61,16 @@ pub enum Type {
         /// Return type
         returns: Box<Type>,
     },
-    
+
     /// Union type representing one of several possible types (T1 | T2 | ...)
     Union(Vec<Type>),
-    
+
     /// Type variable used during type inference
     Var(TypeVar),
-    
+
     /// Named type (e.g., user-defined class or type alias)
     Named(String),
-    
+
     /// Generic type with type parameters
     Generic {
         /// Name of the generic type
@@ -106,7 +106,7 @@ impl fmt::Display for Type {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "Tuple[{}]", items_str)
-            }
+            },
             Type::Set(inner) => write!(f, "Set[{}]", inner),
             Type::Function { params, returns } => {
                 let params_str = params
@@ -115,7 +115,7 @@ impl fmt::Display for Type {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "Callable[[{}], {}]", params_str, returns)
-            }
+            },
             Type::Union(types) => {
                 let types_str = types
                     .iter()
@@ -123,7 +123,7 @@ impl fmt::Display for Type {
                     .collect::<Vec<_>>()
                     .join(" | ");
                 write!(f, "{}", types_str)
-            }
+            },
             Type::Var(var) => write!(f, "{}", var),
             Type::Named(name) => write!(f, "{}", name),
             Type::Generic { name, params } => {
@@ -133,7 +133,7 @@ impl fmt::Display for Type {
                     .collect::<Vec<_>>()
                     .join(", ");
                 write!(f, "{}[{}]", name, params_str)
-            }
+            },
         }
     }
 }
@@ -148,34 +148,26 @@ pub struct TypeEnv {
 impl TypeEnv {
     /// Creates a new empty type environment.
     pub fn new() -> Self {
-        Self {
-            bindings: HashMap::new(),
-            parent: None,
-        }
+        Self { bindings: HashMap::new(), parent: None }
     }
-    
+
     /// Creates a new nested type environment.
     pub fn nested(env: TypeEnv) -> Self {
-        Self {
-            bindings: HashMap::new(),
-            parent: Some(Box::new(env)),
-        }
+        Self { bindings: HashMap::new(), parent: Some(Box::new(env)) }
     }
-    
+
     /// Looks up a variable in the environment.
     pub fn lookup(&self, name: &str) -> Option<&Type> {
-        self.bindings.get(name).or_else(|| {
-            self.parent
-                .as_ref()
-                .and_then(|parent| parent.lookup(name))
-        })
+        self.bindings
+            .get(name)
+            .or_else(|| self.parent.as_ref().and_then(|parent| parent.lookup(name)))
     }
-    
+
     /// Binds a variable to a type in the current scope.
     pub fn bind(&mut self, name: String, ty: Type) -> Option<Type> {
         self.bindings.insert(name, ty)
     }
-    
+
     /// Returns the parent environment, if any.
     pub fn parent(&self) -> Option<&TypeEnv> {
         self.parent.as_deref()
@@ -185,7 +177,7 @@ impl TypeEnv {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_type_display() {
         assert_eq!(Type::Int.to_string(), "int");
@@ -195,26 +187,23 @@ mod tests {
             "Dict[str, int]"
         );
         assert_eq!(
-            Type::Function {
-                params: vec![Type::Int, Type::Str],
-                returns: Box::new(Type::Bool)
-            }
-            .to_string(),
+            Type::Function { params: vec![Type::Int, Type::Str], returns: Box::new(Type::Bool) }
+                .to_string(),
             "Callable[[int, str], bool]"
         );
     }
-    
+
     #[test]
     fn test_type_env() {
         let mut env = TypeEnv::new();
         env.bind("x".to_string(), Type::Int);
-        
+
         assert_eq!(env.lookup("x"), Some(&Type::Int));
         assert_eq!(env.lookup("y"), None);
-        
+
         let mut inner_env = TypeEnv::nested(env);
         inner_env.bind("y".to_string(), Type::Str);
-        
+
         assert_eq!(inner_env.lookup("x"), Some(&Type::Int));
         assert_eq!(inner_env.lookup("y"), Some(&Type::Str));
     }

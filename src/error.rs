@@ -11,23 +11,23 @@ pub enum Error {
     /// I/O related errors.
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
-    
+
     /// Parser related errors.
     #[error("Parser error: {0}")]
     Parser(String),
-    
+
     /// Type checking related errors.
     #[error("Type error: {0}")]
     TypeError(String),
-    
+
     /// Invalid argument errors.
     #[error("Invalid argument: {0}")]
     ArgumentError(String),
-    
+
     /// Feature not implemented yet.
     #[error("Not implemented: {0}")]
     NotImplemented(String),
-    
+
     /// Other miscellaneous errors.
     #[error("{0}")]
     Other(String),
@@ -38,17 +38,17 @@ impl Error {
     pub fn parser_error(msg: impl Into<String>) -> Self {
         Self::Parser(msg.into())
     }
-    
+
     /// Creates a new type error.
     pub fn type_error(msg: impl Into<String>) -> Self {
         Self::TypeError(msg.into())
     }
-    
+
     /// Creates a new argument error.
     pub fn argument_error(msg: impl Into<String>) -> Self {
         Self::ArgumentError(msg.into())
     }
-    
+
     /// Creates a new not implemented error.
     pub fn not_implemented(feature: impl Into<String>) -> Self {
         Self::NotImplemented(feature.into())

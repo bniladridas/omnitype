@@ -10,10 +10,10 @@ use crate::types::{Type, TypeVar};
 pub enum Constraint {
     /// Type equality constraint: T1 = T2
     Equal(Type, Type),
-    
+
     /// Subtype constraint: T1 <: T2
     Subtype(Type, Type),
-    
+
     /// Occurs check constraint (prevents infinite types)
     Occurs(TypeVar, Type),
 }
@@ -22,10 +22,10 @@ pub enum Constraint {
 pub struct ConstraintSolver {
     /// Type variable counter for generating fresh type variables
     next_var: u32,
-    
+
     /// Set of constraints to solve
     constraints: Vec<Constraint>,
-    
+
     /// Substitution mapping from type variables to types
     substitution: HashMap<TypeVar, Type>,
 }
@@ -39,25 +39,21 @@ impl Default for ConstraintSolver {
 impl ConstraintSolver {
     /// Creates a new constraint solver.
     pub fn new() -> Self {
-        Self {
-            next_var: 0,
-            constraints: Vec::new(),
-            substitution: HashMap::new(),
-        }
+        Self { next_var: 0, constraints: Vec::new(), substitution: HashMap::new() }
     }
-    
+
     /// Generates a fresh type variable.
     pub fn fresh_var(&mut self) -> TypeVar {
         let var = TypeVar(self.next_var);
         self.next_var += 1;
         var
     }
-    
+
     /// Adds a new constraint to the solver.
     pub fn add_constraint(&mut self, constraint: Constraint) {
         self.constraints.push(constraint);
     }
-    
+
     /// Solves the collected constraints and returns the substitution.
     pub fn solve(mut self) -> Result<HashMap<TypeVar, Type>> {
         while let Some(constraint) = self.constraints.pop() {
@@ -65,7 +61,7 @@ impl ConstraintSolver {
         }
         Ok(self.substitution)
     }
-    
+
     /// Solves a single constraint.
     fn solve_constraint(&mut self, constraint: Constraint) -> Result<()> {
         match constraint {
@@ -75,19 +71,19 @@ impl ConstraintSolver {
         }
         Ok(())
     }
-    
+
     /// Unifies two types.
     fn unify(&mut self, _t1: Type, _t2: Type) -> Result<()> {
         // TODO: Implement unification algorithm
         Ok(())
     }
-    
+
     /// Handles subtyping relationships.
     fn subtype(&mut self, _t1: Type, _t2: Type) -> Result<()> {
         // TODO: Implement subtyping rules
         Ok(())
     }
-    
+
     /// Performs the occurs check to prevent infinite types.
     fn occurs_check(&self, _var: TypeVar, _ty: &Type) -> Result<()> {
         // TODO: Implement occurs check
@@ -98,7 +94,7 @@ impl ConstraintSolver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_fresh_var() {
         let mut solver = ConstraintSolver::new();

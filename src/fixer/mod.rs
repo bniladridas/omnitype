@@ -12,7 +12,7 @@ use crate::utils::find_python_files;
 pub struct Fixer {
     /// Type environment containing inferred types
     type_env: TypeEnv,
-    
+
     /// Whether to apply changes in-place
     in_place: bool,
 }
@@ -22,7 +22,7 @@ impl Fixer {
     pub fn new(type_env: TypeEnv, in_place: bool) -> Self {
         Self { type_env, in_place }
     }
-    
+
     /// Fixes type annotations in the specified file or directory.
     pub fn fix_path<P: AsRef<Path>>(&self, path: P) -> Result<()> {
         let path = path.as_ref();
@@ -35,7 +35,7 @@ impl Fixer {
         }
         Ok(())
     }
-    
+
     /// Fixes type annotations in a single source file.
     #[allow(dead_code)]
     fn fix_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
@@ -50,7 +50,7 @@ impl Fixer {
         }
         Ok(())
     }
-    
+
     /// Generates a type annotation for a node.
     #[allow(dead_code)]
     fn generate_annotation(&self, _node: &tree_sitter::Node, _source: &[u8]) -> Option<String> {
@@ -101,7 +101,10 @@ impl Fixer {
             out.push('\n');
         }
 
-        if used_any && !source.contains("from typing import Any") && !out.contains("from typing import Any") {
+        if used_any
+            && !source.contains("from typing import Any")
+            && !out.contains("from typing import Any")
+        {
             let lines: Vec<&str> = out.lines().collect();
             let mut insert_at = 0usize;
             if !lines.is_empty() && (lines[0].starts_with("#!") || lines[0].contains("coding")) {
@@ -109,7 +112,9 @@ impl Fixer {
             }
             let mut new_out = String::new();
             for (i, l) in lines.iter().enumerate() {
-                if i == insert_at { new_out.push_str("from typing import Any\n"); }
+                if i == insert_at {
+                    new_out.push_str("from typing import Any\n");
+                }
                 new_out.push_str(l);
                 new_out.push('\n');
             }
@@ -153,7 +158,7 @@ impl Fixer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_fixer_initialization() {
         let type_env = TypeEnv::new();

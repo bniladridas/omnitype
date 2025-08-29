@@ -12,7 +12,7 @@ use crate::types::Type;
 pub struct TypeTrace {
     /// Map from variable names to their observed types
     variables: HashMap<String, Vec<Type>>,
-    
+
     /// Map from function names to their argument and return types
     functions: HashMap<String, (Vec<Vec<Type>>, Vec<Type>)>,
 }
@@ -22,7 +22,7 @@ pub struct TypeTrace {
 pub struct RuntimeTracer {
     /// Accumulated type traces
     traces: TypeTrace,
-    
+
     /// Whether to enable detailed logging
     verbose: bool,
 }
@@ -30,12 +30,9 @@ pub struct RuntimeTracer {
 impl RuntimeTracer {
     /// Creates a new runtime tracer.
     pub fn new(verbose: bool) -> Self {
-        Self {
-            traces: TypeTrace::default(),
-            verbose,
-        }
+        Self { traces: TypeTrace::default(), verbose }
     }
-    
+
     /// Runs the tracer on the specified test file or module.
     pub fn run<P: AsRef<Path>>(&mut self, path: P, test_name: Option<&str>) -> Result<()> {
         // TODO: Implement test execution with tracing
@@ -45,12 +42,12 @@ impl RuntimeTracer {
                 println!("Test: {}", name);
             }
         }
-        
+
         // TODO: Execute tests and collect type information
-        
+
         Ok(())
     }
-    
+
     /// Returns the collected type traces.
     pub fn into_traces(self) -> TypeTrace {
         self.traces
@@ -60,7 +57,7 @@ impl RuntimeTracer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_tracer_initialization() {
         let tracer = RuntimeTracer::new(false);

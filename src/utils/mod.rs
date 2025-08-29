@@ -24,7 +24,7 @@ pub fn path_to_module_name(path: &Path) -> Option<String> {
     if path.to_str()?.ends_with(std::path::MAIN_SEPARATOR) || path.to_str()?.ends_with('/') {
         return None;
     }
-    
+
     // Get the file stem (without extension)
     path.file_stem()
         .and_then(|s| s.to_str())
@@ -36,38 +36,32 @@ mod tests {
     use super::*;
     use std::fs::File;
     use tempfile::tempdir;
-    
+
     #[test]
     fn test_find_python_files() {
         let temp_dir = tempdir().unwrap();
         let dir_path = temp_dir.path();
-        
+
         // Create test files
         let _ = File::create(dir_path.join("test1.py")).unwrap();
         let _ = File::create(dir_path.join("test2.py")).unwrap();
         let _ = File::create(dir_path.join("not_python.txt")).unwrap();
-        
+
         // Test finding Python files
         let python_files: Vec<_> = find_python_files(dir_path).collect();
         assert_eq!(python_files.len(), 2);
-        
+
         // Cleanup
         temp_dir.close().unwrap();
     }
-    
+
     #[test]
     fn test_path_to_module_name() {
         assert_eq!(
             path_to_module_name(Path::new("/path/to/module.py")),
             Some("module".to_string())
         );
-        assert_eq!(
-            path_to_module_name(Path::new("module.py")),
-            Some("module".to_string())
-        );
-        assert_eq!(
-            path_to_module_name(Path::new("/path/to/dir/")),
-            None
-        );
+        assert_eq!(path_to_module_name(Path::new("module.py")), Some("module".to_string()));
+        assert_eq!(path_to_module_name(Path::new("/path/to/dir/")), None);
     }
 }
