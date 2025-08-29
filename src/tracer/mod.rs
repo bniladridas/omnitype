@@ -429,11 +429,24 @@ _tracer.print_traces()
                         self.process_trace_data(&trace_data)?;
                     },
                     Err(e) => {
+                        log::error!("Failed to parse trace JSON from Python script: {}", e);
                         if self.verbose {
-                            eprintln!("Failed to parse trace JSON: {}", e);
+                            eprintln!("-- Problematic JSON --\n{}\n-- End JSON --", trace_json);
                         }
                     },
                 }
+            } else {
+                log::warn!(
+                    "Found TRACE_OUTPUT_START but missing TRACE_OUTPUT_END marker in Python output"
+                );
+                if self.verbose {
+                    eprintln!("-- Python Output --\n{}\n-- End Output --", output);
+                }
+            }
+        } else {
+            log::warn!("No trace output markers found in Python script output - script may have failed to execute properly");
+            if self.verbose {
+                eprintln!("-- Python Output --\n{}\n-- End Output --", output);
             }
         }
 
