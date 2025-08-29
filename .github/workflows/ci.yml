@@ -44,11 +44,18 @@ jobs:
       - name: Run Clippy
         run: cargo clippy -- -D warnings
       
-      - name: Check for unused dependencies
-        uses: actions-rs/cargo@v1
+      - name: Install nightly toolchain for cargo-udeps
+        uses: actions-rs/toolchain@v1
         with:
-          command: udeps
-          args: --all-targets -- -D warnings
+          toolchain: nightly
+          profile: minimal
+          override: false
+      
+      - name: Install cargo-udeps
+        run: cargo install cargo-udeps
+      
+      - name: Check for unused dependencies
+        run: cargo +nightly udeps --all-targets
       
       - name: Audit dependencies
         uses: actions-rs/audit-check@v1
