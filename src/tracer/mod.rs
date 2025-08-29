@@ -115,19 +115,23 @@ impl RuntimeTracer {
         let python = std::env::var("OMNITYPE_PYTHON")
             .or_else(|_| std::env::var("PYTHON"))
             .unwrap_or_else(|_| "python3".to_string());
-            
+
         // Execute the instrumented Python file
         let mut child = Command::new(python)
             .arg(temp_file.path())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .spawn()
-            .map_err(|e| Error::Io(std::io::Error::other(format!("Failed to spawn Python: {}", e))))?;
+            .map_err(|e| {
+                Error::Io(std::io::Error::other(format!("Failed to spawn Python: {}", e)))
+            })?;
 
         // Wait up to 60 seconds for Python to finish
         let status = child
             .wait_timeout(std::time::Duration::from_secs(60))
-            .map_err(|e| Error::Io(std::io::Error::other(format!("Error waiting for Python: {}", e))))?;
+            .map_err(|e| {
+                Error::Io(std::io::Error::other(format!("Error waiting for Python: {}", e)))
+            })?;
         let output = if let Some(status) = status {
             let mut out = Vec::new();
             let mut err = Vec::new();
@@ -144,9 +148,9 @@ impl RuntimeTracer {
             let _ = child.kill();
             Err(Error::Io(std::io::Error::other("Python execution timed out")))
         };
- 
+
         // temp_file is automatically cleaned up when it goes out of scope
- 
+
         match output {
             Ok(output) => {
                 if !output.status.success() {
@@ -159,10 +163,10 @@ impl RuntimeTracer {
                         stderr
                     ))));
                 }
- 
+
                 let stdout = String::from_utf8_lossy(&output.stdout);
                 self.parse_trace_output(&stdout)?;
- 
+
                 if self.verbose {
                     println!("Trace collection completed successfully");
                     self.print_trace_summary();

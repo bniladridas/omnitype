@@ -1,9 +1,9 @@
 //! Type system definitions for omnitype.
 
-use std::collections::{HashMap, BTreeSet};
+use std::cmp::Ordering;
+use std::collections::{BTreeSet, HashMap};
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::cmp::Ordering;
 
 use serde::{Deserialize, Serialize};
 
@@ -90,21 +90,21 @@ impl Hash for Type {
             Type::Dict(k, v) => {
                 k.hash(state);
                 v.hash(state);
-            }
+            },
             Type::Tuple(types) => types.hash(state),
             Type::Set(inner) => inner.hash(state),
             Type::Function { params, returns } => {
                 params.hash(state);
                 returns.hash(state);
-            }
+            },
             Type::Union(types) => types.hash(state),
             Type::Var(var) => var.hash(state),
             Type::Named(name) => name.hash(state),
             Type::Generic { name, params } => {
                 name.hash(state);
                 params.hash(state);
-            }
-            _ => ()
+            },
+            _ => (),
         }
     }
 }
@@ -116,18 +116,18 @@ impl PartialEq for Type {
             (Type::Dict(ak, av), Type::Dict(bk, bv)) => ak == bk && av == bv,
             (Type::Tuple(a), Type::Tuple(b)) => a == b,
             (Type::Set(a), Type::Set(b)) => a == b,
-            (Type::Function { params: a_params, returns: a_ret }, 
-             Type::Function { params: b_params, returns: b_ret }) => {
-                a_params == b_params && a_ret == b_ret
-            }
+            (
+                Type::Function { params: a_params, returns: a_ret },
+                Type::Function { params: b_params, returns: b_ret },
+            ) => a_params == b_params && a_ret == b_ret,
             (Type::Union(a), Type::Union(b)) => a == b,
             (Type::Var(a), Type::Var(b)) => a == b,
             (Type::Named(a), Type::Named(b)) => a == b,
-            (Type::Generic { name: a_name, params: a_params },
-             Type::Generic { name: b_name, params: b_params }) => {
-                a_name == b_name && a_params == b_params
-            }
-            (a, b) => std::mem::discriminant(a) == std::mem::discriminant(b)
+            (
+                Type::Generic { name: a_name, params: a_params },
+                Type::Generic { name: b_name, params: b_params },
+            ) => a_name == b_name && a_params == b_params,
+            (a, b) => std::mem::discriminant(a) == std::mem::discriminant(b),
         }
     }
 }
@@ -152,31 +152,29 @@ impl Ord for Type {
             (Type::Str, Type::Str) => Ordering::Equal,
             (Type::Bytes, Type::Bytes) => Ordering::Equal,
             (Type::List(a), Type::List(b)) => a.cmp(b),
-            (Type::Dict(ak, av), Type::Dict(bk, bv)) => {
-                match ak.cmp(bk) {
-                    Ordering::Equal => av.cmp(bv),
-                    ord => ord,
-                }
-            }
+            (Type::Dict(ak, av), Type::Dict(bk, bv)) => match ak.cmp(bk) {
+                Ordering::Equal => av.cmp(bv),
+                ord => ord,
+            },
             (Type::Tuple(a), Type::Tuple(b)) => a.cmp(b),
             (Type::Set(a), Type::Set(b)) => a.cmp(b),
-            (Type::Function { params: a_params, returns: a_ret }, 
-             Type::Function { params: b_params, returns: b_ret }) => {
-                match a_params.cmp(b_params) {
-                    Ordering::Equal => a_ret.cmp(b_ret),
-                    ord => ord,
-                }
-            }
+            (
+                Type::Function { params: a_params, returns: a_ret },
+                Type::Function { params: b_params, returns: b_ret },
+            ) => match a_params.cmp(b_params) {
+                Ordering::Equal => a_ret.cmp(b_ret),
+                ord => ord,
+            },
             (Type::Union(a), Type::Union(b)) => a.cmp(b),
             (Type::Var(a), Type::Var(b)) => a.0.cmp(&b.0),
             (Type::Named(a), Type::Named(b)) => a.cmp(b),
-            (Type::Generic { name: a_name, params: a_params },
-             Type::Generic { name: b_name, params: b_params }) => {
-                match a_name.cmp(b_name) {
-                    Ordering::Equal => a_params.cmp(b_params),
-                    ord => ord,
-                }
-            }
+            (
+                Type::Generic { name: a_name, params: a_params },
+                Type::Generic { name: b_name, params: b_params },
+            ) => match a_name.cmp(b_name) {
+                Ordering::Equal => a_params.cmp(b_params),
+                ord => ord,
+            },
             (a, b) => {
                 // Compare discriminants by matching all possible variants
                 match (a, b) {
@@ -214,7 +212,7 @@ impl Ord for Type {
                     (_, Type::Named(_)) => Ordering::Greater,
                     (Type::Generic { .. }, _) => Ordering::Equal,
                 }
-            }
+            },
         }
     }
 }
@@ -227,7 +225,7 @@ impl Type {
         if types.is_empty() {
             return Type::Unknown;
         }
-        
+
         // Flatten nested unions and collect unique types
         let mut unique_types = BTreeSet::new();
         for ty in types {
@@ -236,18 +234,18 @@ impl Type {
                     for nested_ty in nested_types {
                         unique_types.insert(nested_ty);
                     }
-                }
+                },
                 _ => {
                     unique_types.insert(ty);
-                }
+                },
             }
         }
-        
+
         // If there's only one unique type, return it directly
         if unique_types.len() == 1 {
             return unique_types.into_iter().next().unwrap();
         }
-        
+
         // Convert back to a sorted vector
         Type::Union(unique_types.into_iter().collect())
     }

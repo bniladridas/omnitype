@@ -177,7 +177,7 @@ fn main() -> io::Result<()> {
                         .init();
                     Ok(())
                 }
-                
+
                 // Rest of the Trace command implementation
                 setup_logging("info")?;
                 // TODO: Add actual trace command implementation
