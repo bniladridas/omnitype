@@ -435,23 +435,31 @@ import base64
 exec(base64.b64decode('{original_code}').decode('utf-8'))
 
 # Run the specific test function with tracing enabled
+// Before: directly interpolating `test_name` into the Python code
+// After: JSON-escape `test_name` to produce a safe Python literal
+let test_name_json = serde_json::to_string(test_name)
+    .map_err(|e| Error::Io(std::io::Error::other(format!("bad test_name: {}", e))))?;
+let tracer_code = format!(
+    r#"
+# Run the specific test function with tracing enabled
 current_module = sys.modules[__name__]
-if hasattr(current_module, '{test_name}'):
-    test_func = getattr(current_module, '{test_name}')
+TEST_NAME = {test_name_json}
+if hasattr(current_module, TEST_NAME):
+    test_func = getattr(current_module, TEST_NAME)
     sys.settrace(_tracer.trace_calls)
     try:
-        print(f"Tracing specific test: {test_name}")
+        print(f"Tracing specific test: {TEST_NAME}")
         test_func()
     except Exception as e:
-        print(f"Error calling {test_name}: {{e}}")
+        print(f"Error calling {TEST_NAME}: {e}")
     finally:
         sys.settrace(None)
 
 _tracer.print_traces()
 "#,
-            original_code = encoded_content,
-            test_name = test_name
-        );
+    original_code   = encoded_content,
+    test_name_json  = test_name_json
+);
 
         Ok(tracer_code)
     }
