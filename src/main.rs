@@ -170,34 +170,35 @@ fn main() -> io::Result<()> {
             },
             Commands::Trace { path, test } => {
                 use omnitype::tracer::RuntimeTracer;
-                
+
                 let verbose = matches!(cli.log_level.to_lowercase().as_str(), "debug" | "trace");
                 let mut tracer = RuntimeTracer::new(verbose);
-                
+
                 match tracer.run(&path, test.as_deref()) {
                     Ok(()) => {
                         let traces = tracer.traces();
-                        
+
                         // Output results in a structured format
                         if !traces.variables.is_empty() || !traces.functions.is_empty() {
                             println!("Runtime tracing completed successfully!");
-                            
+
                             if !traces.variables.is_empty() {
                                 println!("\nVariable type observations:");
                                 for (name, types) in &traces.variables {
-                                    let unique_types: std::collections::HashSet<String> = 
+                                    let unique_types: std::collections::HashSet<String> =
                                         types.iter().map(|t| t.to_string()).collect();
                                     let type_list: Vec<String> = unique_types.into_iter().collect();
                                     println!("  {}: {}", name, type_list.join(" | "));
                                 }
                             }
-                            
+
                             if !traces.functions.is_empty() {
                                 println!("\nFunction call signatures:");
                                 for (name, (arg_calls, return_calls)) in &traces.functions {
                                     println!("  {}:", name);
                                     for (args, ret) in arg_calls.iter().zip(return_calls.iter()) {
-                                        let arg_strs: Vec<String> = args.iter().map(|t| t.to_string()).collect();
+                                        let arg_strs: Vec<String> =
+                                            args.iter().map(|t| t.to_string()).collect();
                                         println!("    ({}) -> {}", arg_strs.join(", "), ret);
                                     }
                                 }
@@ -205,11 +206,11 @@ fn main() -> io::Result<()> {
                         } else {
                             println!("No type information collected. Make sure the Python file contains executable code.");
                         }
-                    }
+                    },
                     Err(e) => {
                         eprintln!("Runtime tracing failed: {}", e);
                         std::process::exit(1);
-                    }
+                    },
                 }
             },
         }
