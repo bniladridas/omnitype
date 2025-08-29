@@ -1,29 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-# Install dependencies
-if ! command -v gh &> /dev/null; then
-    echo "Installing GitHub CLI..."
-    if [[ "$OSTYPE" == "darwin"* ]]; then
-        brew install gh
-    elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-        sudo apt-get update && sudo apt-get install -y gh
-    else
-        echo "Please install GitHub CLI manually: https://cli.github.com/"
-        exit 1
-    fi
-fi
-
 # Set up git config for the action
 git config --global user.name "Release Bot"
 git config --global user.email "release-bot@example.com"
-
-# Check if we're in GitHub Actions and have a token
-if [ -n "${GITHUB_TOKEN:-}" ]; then
-    echo "$GITHUB_TOKEN" | gh auth login --with-token
-else
-    echo "Warning: No GITHUB_TOKEN found, skipping GitHub CLI authentication"
-fi
 
 # Get the latest two tags
 LATEST_TAG=$(git describe --tags --abbrev=0)
@@ -48,17 +28,19 @@ echo "" >> "$OUTPUT_FILE"
 
 # Get list of changed files
 echo "## Changed Files" >> "$OUTPUT_FILE"
-git diff --name-only ${PREVIOUS_TAG}..${LATEST_TAG} | sort >> "$OUTPUT_FILE"
+git diff --name-only ${PREVIOUS_TAG}..${LATEST_TAG} | sort >> "$OUTPUT_FILE" || echo "No files changed" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
 
 # Get detailed diffs for Rust files
 echo "## Rust File Diffs" >> "$OUTPUT_FILE"
-for file in $(git diff --name-only ${PREVIOUS_TAG}..${LATEST_TAG} | grep '\.rs$'); do
-    echo "" >> "$OUTPUT_FILE"
-    echo "### $file" >> "$OUTPUT_FILE"
-    echo '```diff' >> "$OUTPUT_FILE"
-    git diff ${PREVIOUS_TAG}..${LATEST_TAG} -- "$file" >> "$OUTPUT_FILE" 2>/dev/null || echo "No changes" >> "$OUTPUT_FILE"
-    echo '```' >> "$OUTPUT_FILE"
+for file in $(git diff --name-only ${PREVIOUS_TAG}..${LATEST_TAG} | grep '\.rs$' || true); do
+    if [ -n "$file" ]; then
+        echo "" >> "$OUTPUT_FILE"
+        echo "### $file" >> "$OUTPUT_FILE"
+        echo '```diff' >> "$OUTPUT_FILE"
+        git diff ${PREVIOUS_TAG}..${LATEST_TAG} -- "$file" >> "$OUTPUT_FILE" 2>/dev/null || echo "No changes" >> "$OUTPUT_FILE"
+        echo '```' >> "$OUTPUT_FILE"
+    fi
 done
 
 echo "## Summary of Changes" >> "$OUTPUT_FILE"
