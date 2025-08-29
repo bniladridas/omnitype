@@ -312,7 +312,7 @@ for name in dir(current_module):
 # Disable tracing
 sys.settrace(None)
 
-_tracer.print_traces()
+", original_code = content);
 "#,
             original_code = content.replace("'", r"\'").replace("\"", r#"\""#)
         );
