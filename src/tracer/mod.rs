@@ -339,8 +339,10 @@ _tracer.print_traces()
         test_name: &str,
     ) -> Result<String> {
         let content = fs::read_to_string(path)?;
-
         let encoded_content = BASE64_STANDARD.encode(&content);
+        let test_name_json = serde_json::to_string(test_name)
+            .map_err(|e| Error::Io(std::io::Error::other(format!("bad test_name: {}", e))))?;
+
         let tracer_code = format!(
             r#"
 import sys
@@ -440,34 +442,27 @@ _tracer = TypeTracer()
 
 # Execute the original code (safely using base64 encoding)
 import base64
-exec(base64.b64decode('{original_code}').decode('utf-8'))
+exec(base64.b64decode('{encoded_content}').decode('utf-8'))
 
 # Run the specific test function with tracing enabled
-// Before: directly interpolating `test_name` into the Python code
-// After: JSON-escape `test_name` to produce a safe Python literal
-let test_name_json = serde_json::to_string(test_name)
-    .map_err(|e| Error::Io(std::io::Error::other(format!("bad test_name: {}", e))))?;
-let tracer_code = format!(
-    r#"
-# Run the specific test function with tracing enabled
 current_module = sys.modules[__name__]
-TEST_NAME = {test_name_json}
+TEST_NAME = {test_name}
 if hasattr(current_module, TEST_NAME):
     test_func = getattr(current_module, TEST_NAME)
     sys.settrace(_tracer.trace_calls)
     try:
-        print(f"Tracing specific test: {TEST_NAME}")
+        print('Tracing specific test: {{}}'.format(TEST_NAME))
         test_func()
     except Exception as e:
-        print(f"Error calling {TEST_NAME}: {e}")
+        print('Error calling {{}}: {{}}'.format(TEST_NAME, str(e)))
     finally:
         sys.settrace(None)
 
 _tracer.print_traces()
 "#,
-    original_code   = encoded_content,
-    test_name_json  = test_name_json
-);
+            encoded_content = encoded_content,
+            test_name = test_name_json
+        );
 
         Ok(tracer_code)
     }
@@ -559,8 +554,6 @@ _tracer.print_traces()
                             .add_function_call(func_name.clone(), arg_types, return_type);
                     }
                 }
-            }
-        }
             }
         }
 
@@ -661,6 +654,7 @@ _tracer.print_traces()
 mod tests {
     use super::*;
     use std::fs;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_tracer_initialization() {
