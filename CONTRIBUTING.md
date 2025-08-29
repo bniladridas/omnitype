@@ -102,10 +102,11 @@ perf report
 * `src/parser/` — Source code parsing
 * `src/fixer/` — Annotation fixes and suggestions
 * `src/types/` — Type definitions and structures
+* `src/solver/` — Constraint solver
+* `src/tracer/` — Runtime type tracing/instrumentation
 * `src/ui/` — Terminal user interface
 * `src/error.rs` — Error handling and reporting
 * `src/main.rs` — Command-line interface entry point
-
 ## Standards
 
 * Use `rustfmt` and `clippy`
