@@ -126,10 +126,10 @@ impl RuntimeTracer {
                     if self.verbose {
                         eprintln!("Python execution failed: {}", stderr);
                     }
-                    return Err(Error::Io(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Python execution failed: {}", stderr),
-                    )));
+                    return Err(Error::Io(std::io::Error::other(format!(
+                        "Python execution failed: {}",
+                        stderr
+                    ))));
                 }
 
                 let stdout = String::from_utf8_lossy(&output.stdout);
@@ -141,10 +141,10 @@ impl RuntimeTracer {
                 }
             },
             Err(e) => {
-                return Err(Error::Io(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to execute Python: {}", e),
-                )));
+                return Err(Error::Io(std::io::Error::other(format!(
+                    "Failed to execute Python: {}",
+                    e
+                ))));
             },
         }
 
@@ -450,7 +450,7 @@ _tracer.print_traces()
                 if let Some(types) = type_list.as_array() {
                     for type_str in types {
                         if let Some(type_name) = type_str.as_str() {
-                            let our_type = self.convert_python_type_to_our_type(type_name);
+                            let our_type = Self::convert_python_type_to_our_type(type_name);
                             self.traces.add_variable(var_name.clone(), our_type);
                         }
                     }
@@ -479,12 +479,12 @@ _tracer.print_traces()
                             .unwrap_or(&vec![])
                             .iter()
                             .filter_map(|t| t.as_str())
-                            .map(|t| self.convert_python_type_to_our_type(t))
+                            .map(Self::convert_python_type_to_our_type)
                             .collect();
 
                         let return_type = return_call
                             .as_str()
-                            .map(|t| self.convert_python_type_to_our_type(t))
+                            .map(Self::convert_python_type_to_our_type)
                             .unwrap_or(Type::Unknown);
 
                         self.traces
@@ -498,7 +498,7 @@ _tracer.print_traces()
     }
 
     /// Convert Python type string to our Type enum
-    fn convert_python_type_to_our_type(&self, type_str: &str) -> Type {
+    fn convert_python_type_to_our_type(type_str: &str) -> Type {
         match type_str {
             "None" => Type::None,
             "bool" => Type::Bool,
@@ -508,15 +508,15 @@ _tracer.print_traces()
             "bytes" => Type::Bytes,
             s if s.starts_with("List[") => {
                 let inner = &s[5..s.len() - 1];
-                Type::List(Box::new(self.convert_python_type_to_our_type(inner)))
+                Type::List(Box::new(Self::convert_python_type_to_our_type(inner)))
             },
             s if s.starts_with("Dict[") => {
                 let inner = &s[5..s.len() - 1];
                 let parts: Vec<&str> = inner.split(", ").collect();
                 if parts.len() == 2 {
                     Type::Dict(
-                        Box::new(self.convert_python_type_to_our_type(parts[0])),
-                        Box::new(self.convert_python_type_to_our_type(parts[1])),
+                        Box::new(Self::convert_python_type_to_our_type(parts[0])),
+                        Box::new(Self::convert_python_type_to_our_type(parts[1])),
                     )
                 } else {
                     Type::Dict(Box::new(Type::Any), Box::new(Type::Any))
@@ -530,14 +530,14 @@ _tracer.print_traces()
                     let parts: Vec<&str> = inner.split(", ").collect();
                     let types = parts
                         .iter()
-                        .map(|p| self.convert_python_type_to_our_type(p))
+                        .map(|&p| Self::convert_python_type_to_our_type(p))
                         .collect();
                     Type::Tuple(types)
                 }
             },
             s if s.starts_with("Set[") => {
                 let inner = &s[4..s.len() - 1];
-                Type::Set(Box::new(self.convert_python_type_to_our_type(inner)))
+                Type::Set(Box::new(Self::convert_python_type_to_our_type(inner)))
             },
             "Any" => Type::Any,
             other => Type::Named(other.to_string()),
