@@ -1,9 +1,9 @@
 //! Runtime type tracing for dynamic type information collection.
 
 use std::collections::HashMap;
+use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::fs;
 
 use crate::error::{Error, Result};
 use crate::types::Type;
@@ -66,7 +66,7 @@ impl RuntimeTracer {
     /// Runs the tracer on the specified test file or module.
     pub fn run<P: AsRef<Path>>(&mut self, path: P, test_name: Option<&str>) -> Result<()> {
         let path = path.as_ref();
-        
+
         if self.verbose {
             println!("Running runtime tracer on: {:?}", path);
             if let Some(name) = test_name {
@@ -92,7 +92,7 @@ impl RuntimeTracer {
         // Create a temporary instrumented version of the Python file
         let instrumented_content = self.instrument_python_file(path)?;
         let temp_file = path.with_extension("traced.py");
-        
+
         // Write the instrumented file
         fs::write(&temp_file, instrumented_content)?;
 
@@ -101,7 +101,7 @@ impl RuntimeTracer {
             // For specific test, modify the instrumented content to only run that test
             let specific_test_content = self.create_specific_test_content(path, test_name)?;
             fs::write(&temp_file, specific_test_content)?;
-            
+
             Command::new("python3")
                 .arg(&temp_file)
                 .stdout(Stdio::piped())
@@ -139,13 +139,13 @@ impl RuntimeTracer {
                     println!("Trace collection completed successfully");
                     self.print_trace_summary();
                 }
-            }
+            },
             Err(e) => {
                 return Err(Error::Io(std::io::Error::new(
                     std::io::ErrorKind::Other,
                     format!("Failed to execute Python: {}", e),
                 )));
-            }
+            },
         }
 
         Ok(())
@@ -154,9 +154,10 @@ impl RuntimeTracer {
     /// Instrument a Python file with tracing code
     fn instrument_python_file<P: AsRef<Path>>(&self, path: P) -> Result<String> {
         let content = fs::read_to_string(path)?;
-        
+
         // Create a comprehensive tracing system using sys.settrace
-        let tracer_code = format!(r#"
+        let tracer_code = format!(
+            r#"
 import sys
 import json
 import types
@@ -312,16 +313,23 @@ for name in dir(current_module):
 sys.settrace(None)
 
 _tracer.print_traces()
-"#, original_code = content.replace("'", r"\'").replace("\"", r#"\""#));
+"#,
+            original_code = content.replace("'", r"\'").replace("\"", r#"\""#)
+        );
 
         Ok(tracer_code)
     }
 
     /// Create instrumented content for a specific test function
-    fn create_specific_test_content<P: AsRef<Path>>(&self, path: P, test_name: &str) -> Result<String> {
+    fn create_specific_test_content<P: AsRef<Path>>(
+        &self,
+        path: P,
+        test_name: &str,
+    ) -> Result<String> {
         let content = fs::read_to_string(path)?;
-        
-        let tracer_code = format!(r#"
+
+        let tracer_code = format!(
+            r#"
 import sys
 import json
 import types
@@ -403,10 +411,10 @@ if hasattr(current_module, '{test_name}'):
         print(f"Error calling {test_name}: {{e}}")
 
 _tracer.print_traces()
-"#, 
-        original_code = content.replace("'", r"\'").replace("\"", r#"\""#),
-        test_name = test_name
-    );
+"#,
+            original_code = content.replace("'", r"\'").replace("\"", r#"\""#),
+            test_name = test_name
+        );
 
         Ok(tracer_code)
     }
@@ -417,16 +425,16 @@ _tracer.print_traces()
         if let Some(start) = output.find("TRACE_OUTPUT_START") {
             if let Some(end) = output.find("TRACE_OUTPUT_END") {
                 let trace_json = &output[start + "TRACE_OUTPUT_START".len()..end].trim();
-                
+
                 match serde_json::from_str::<serde_json::Value>(trace_json) {
                     Ok(trace_data) => {
                         self.process_trace_data(&trace_data)?;
-                    }
+                    },
                     Err(e) => {
                         if self.verbose {
                             eprintln!("Failed to parse trace JSON: {}", e);
                         }
-                    }
+                    },
                 }
             }
         }
@@ -456,8 +464,14 @@ _tracer.print_traces()
                 if let Some(func_obj) = func_data.as_object() {
                     let empty_args = vec![];
                     let empty_returns = vec![];
-                    let args = func_obj.get("args").and_then(|a| a.as_array()).unwrap_or(&empty_args);
-                    let returns = func_obj.get("returns").and_then(|r| r.as_array()).unwrap_or(&empty_returns);
+                    let args = func_obj
+                        .get("args")
+                        .and_then(|a| a.as_array())
+                        .unwrap_or(&empty_args);
+                    let returns = func_obj
+                        .get("returns")
+                        .and_then(|r| r.as_array())
+                        .unwrap_or(&empty_returns);
 
                     for (arg_call, return_call) in args.iter().zip(returns.iter()) {
                         let arg_types: Vec<Type> = arg_call
@@ -473,7 +487,8 @@ _tracer.print_traces()
                             .map(|t| self.convert_python_type_to_our_type(t))
                             .unwrap_or(Type::Unknown);
 
-                        self.traces.add_function_call(func_name.clone(), arg_types, return_type);
+                        self.traces
+                            .add_function_call(func_name.clone(), arg_types, return_type);
                     }
                 }
             }
@@ -492,37 +507,38 @@ _tracer.print_traces()
             "str" => Type::Str,
             "bytes" => Type::Bytes,
             s if s.starts_with("List[") => {
-                let inner = &s[5..s.len()-1];
+                let inner = &s[5..s.len() - 1];
                 Type::List(Box::new(self.convert_python_type_to_our_type(inner)))
-            }
+            },
             s if s.starts_with("Dict[") => {
-                let inner = &s[5..s.len()-1];
+                let inner = &s[5..s.len() - 1];
                 let parts: Vec<&str> = inner.split(", ").collect();
                 if parts.len() == 2 {
                     Type::Dict(
                         Box::new(self.convert_python_type_to_our_type(parts[0])),
-                        Box::new(self.convert_python_type_to_our_type(parts[1]))
+                        Box::new(self.convert_python_type_to_our_type(parts[1])),
                     )
                 } else {
                     Type::Dict(Box::new(Type::Any), Box::new(Type::Any))
                 }
-            }
+            },
             s if s.starts_with("Tuple[") => {
-                let inner = &s[6..s.len()-1];
+                let inner = &s[6..s.len() - 1];
                 if inner == "()" {
                     Type::Tuple(vec![])
                 } else {
                     let parts: Vec<&str> = inner.split(", ").collect();
-                    let types = parts.iter()
+                    let types = parts
+                        .iter()
                         .map(|p| self.convert_python_type_to_our_type(p))
                         .collect();
                     Type::Tuple(types)
                 }
-            }
+            },
             s if s.starts_with("Set[") => {
-                let inner = &s[4..s.len()-1];
+                let inner = &s[4..s.len() - 1];
                 Type::Set(Box::new(self.convert_python_type_to_our_type(inner)))
-            }
+            },
             "Any" => Type::Any,
             other => Type::Named(other.to_string()),
         }
@@ -531,11 +547,12 @@ _tracer.print_traces()
     /// Print a summary of collected traces
     fn print_trace_summary(&self) {
         println!("\n=== Runtime Type Trace Summary ===");
-        
+
         if !self.traces.variables.is_empty() {
             println!("\nVariable Types:");
             for (name, types) in &self.traces.variables {
-                let unique_types: Vec<String> = types.iter()
+                let unique_types: Vec<String> = types
+                    .iter()
                     .map(|t| t.to_string())
                     .collect::<std::collections::HashSet<_>>()
                     .into_iter()
@@ -554,7 +571,7 @@ _tracer.print_traces()
                 }
             }
         }
-        
+
         println!("=== End Trace Summary ===\n");
     }
 
@@ -583,23 +600,19 @@ mod tests {
     #[test]
     fn test_type_trace_operations() {
         let mut trace = TypeTrace::default();
-        
+
         // Test variable tracing
         trace.add_variable("x".to_string(), Type::Int);
         trace.add_variable("x".to_string(), Type::Str);
-        
+
         let x_types = trace.get_variable_types("x");
         assert_eq!(x_types.len(), 2);
         assert!(x_types.contains(&&Type::Int));
         assert!(x_types.contains(&&Type::Str));
-        
+
         // Test function tracing
-        trace.add_function_call(
-            "test_func".to_string(),
-            vec![Type::Int, Type::Str],
-            Type::Bool
-        );
-        
+        trace.add_function_call("test_func".to_string(), vec![Type::Int, Type::Str], Type::Bool);
+
         assert!(trace.functions.contains_key("test_func"));
         let (args, returns) = &trace.functions["test_func"];
         assert_eq!(args.len(), 1);
@@ -611,15 +624,15 @@ mod tests {
     #[test]
     fn test_python_type_conversion() {
         let tracer = RuntimeTracer::new(false);
-        
+
         assert_eq!(tracer.convert_python_type_to_our_type("int"), Type::Int);
         assert_eq!(tracer.convert_python_type_to_our_type("str"), Type::Str);
         assert_eq!(tracer.convert_python_type_to_our_type("None"), Type::None);
-        
+
         // Test complex types
         let list_type = tracer.convert_python_type_to_our_type("List[int]");
         assert_eq!(list_type, Type::List(Box::new(Type::Int)));
-        
+
         let dict_type = tracer.convert_python_type_to_our_type("Dict[str, int]");
         assert_eq!(dict_type, Type::Dict(Box::new(Type::Str), Box::new(Type::Int)));
     }
@@ -627,7 +640,7 @@ mod tests {
     #[test]
     fn test_instrumentation_creation() {
         let tracer = RuntimeTracer::new(false);
-        
+
         // Create a simple test Python file
         let test_content = r#"
 def simple_function(x):
@@ -636,18 +649,18 @@ def simple_function(x):
 def test_simple():
     assert simple_function(5) == 6
 "#;
-        
+
         let temp_file = "test_temp.py";
         fs::write(temp_file, test_content).unwrap();
-        
+
         let instrumented = tracer.instrument_python_file(temp_file);
         assert!(instrumented.is_ok());
-        
+
         let content = instrumented.unwrap();
         assert!(content.contains("TypeTracer"));
         assert!(content.contains("TRACE_OUTPUT_START"));
         assert!(content.contains("sys.settrace"));
-        
+
         // Clean up
         let _ = fs::remove_file(temp_file);
     }
