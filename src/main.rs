@@ -168,13 +168,20 @@ fn main() -> io::Result<()> {
                     println!("Fix completed{}", if in_place { " (in-place)" } else { "" });
                 }
             },
-            Commands::Trace { path, test } => {
-                if let Some(test_name) = test {
-                    log::info!("Tracing test '{}' in {:?}", test_name, path);
-                } else {
-                    log::info!("Tracing all tests in {:?}", path);
+            Commands::Trace { path: _path, test: _test } => {
+                fn setup_logging(level: &str) -> std::io::Result<()> {
+                    // RUST_LOG takes precedence if set; otherwise fall back to CLI value.
+                    let env = env_logger::Env::default().filter_or("RUST_LOG", level);
+                    env_logger::Builder::from_env(env)
+                        .format_timestamp(None)
+                        .init();
+                    Ok(())
                 }
-                println!("Runtime tracing is not yet implemented");
+
+                // Rest of the Trace command implementation
+                setup_logging("info")?;
+                // TODO: Add actual trace command implementation
+                println!("Tracing not yet implemented");
             },
         }
     }
