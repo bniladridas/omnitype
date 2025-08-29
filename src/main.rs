@@ -87,7 +87,7 @@ fn main() -> io::Result<()> {
     let cli = Cli::parse();
 
     // Set up logging
-    setup_logging(&cli.log_level).map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+    setup_logging(&cli.log_level).map_err(io::Error::other)?;
 
     // If no command is provided or TUI flag is set, run the TUI
     if cli.command.is_none() || cli.tui {
