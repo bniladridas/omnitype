@@ -1,4 +1,5 @@
 [![CI](https://github.com/bniladridas/omnitype/workflows/CI/badge.svg)](https://github.com/bniladridas/omnitype/actions)
+[![Release](https://github.com/bniladridas/omnitype/actions/workflows/release.yml/badge.svg)](https://github.com/bniladridas/omnitype/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.89%2B-orange.svg)](https://www.rust-lang.org)
 
