@@ -1,66 +1,25 @@
 # Documentation
 # https://rust-lang.github.io/rust-clippy/master/index.html
 
+# Valid identifiers for documentation
 doc-valid-idents = ["DoxyUnexposed"]
 
-# Allow some lints that are too strict for general use
-allow = [
-    "module_name_repetitions",
-    "missing_errors_doc",
-    "must_use_candidate",
-    "missing_panics_doc",
-    "missing_safety_doc"
-]
+# Complexity thresholds
+cognitive-complexity-threshold = 15
+too-many-arguments-threshold = 7
+too-many-lines-threshold = 500
+type-complexity-threshold = 250
 
-# Deny warnings in tests
-deny = [
-    "clippy::all",
-    "clippy::pedantic",
-    "clippy::nursery",
-    "clippy::cargo"
-]
+# Size thresholds
+enum-variant-size-threshold = 200
+large-error-threshold = 128
+trivial-copy-size-limit = 128
+pass-by-value-size-limit = 256
 
-# Allow some pedantic lints that are too strict
-allow-pedantic = [
-    "doc_markdown",
-    "module_name_repetitions",
-    "missing_errors_doc",
-    "missing_panics_doc"
-]
+# Allowed items
+allowed-scripts = ["Latin"]
+disallowed-names = ["foo", "baz", "quux"]
 
-# Configure specific lints
-[clippy]
-# Style
-enum_variant_names = { allow_private = true }
-module_name_repetitions = { max = 1 }
-
-# Correctness
-debug_assert_with_mut_call = "deny"
-empty_loop = "deny"
-mem_forget = "deny"
-unimplemented = "deny"
-unreachable = "deny"
-unreachable_pub = "deny"
-
-# Performance
-boxed_local = "deny"
-let_underscore_must_use = "deny"
-mem_replace_with_default = "deny"
-mem_replace_with_uninit = "deny"
-missing_const_for_fn = "warn"
-
-# Complexity
-cyclomatic_complexity = { max = 15 }
-function_max_lines = { max = 100 }
-too_many_arguments = { max = 7 }
-too_many_lines = { max = 500 }
-
-# Documentation
-missing_errors_doc = "warn"
-missing_panics_doc = "warn"
-missing_safety_doc = "warn"
-
-# Tests
-dbg_macro = "deny"
-print_stdout = "deny"
-print_stderr = "deny"
+# Behavior settings
+avoid-breaking-exported-api = false
+check-private-items = false
