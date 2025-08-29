@@ -63,13 +63,13 @@ impl Analyzer {
     }
 
     /// Visits a node in the syntax tree and processes it.
-    fn visit_node(&mut self, node: &Node, source: &[u8]) -> Result<()> {
+    fn visit_node(&mut self, _node: &Node, _source: &[u8]) -> Result<()> {
         // TODO: Implement node visiting logic for type inference
 
         // Recursively visit children
-        let mut cursor = node.walk();
-        for child in node.children(&mut cursor) {
-            self.visit_node(&child, source)?;
+        let mut cursor = _node.walk();
+        for child in _node.children(&mut cursor) {
+            self.visit_node(&child, _source)?;
         }
 
         Ok(())
