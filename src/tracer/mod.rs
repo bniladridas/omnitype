@@ -511,21 +511,22 @@ _tracer.print_traces()
         if let Some(functions) = data.get("functions").and_then(|v| v.as_object()) {
             for (func_name, func_data) in functions {
                 if let Some(func_obj) = func_data.as_object() {
-                    let empty_args = vec![];
-                    let empty_returns = vec![];
-                    let args = func_obj
+                    let args: &[serde_json::Value] = func_obj
                         .get("args")
                         .and_then(|a| a.as_array())
-                        .unwrap_or(&empty_args);
-                    let returns = func_obj
+                        .map(Vec::as_slice)
+                        .unwrap_or(&[]);
+                    let returns: &[serde_json::Value] = func_obj
                         .get("returns")
                         .and_then(|r| r.as_array())
-                        .unwrap_or(&empty_returns);
+                        .map(Vec::as_slice)
+                        .unwrap_or(&[]);
 
                     for (arg_call, return_call) in args.iter().zip(returns.iter()) {
                         let arg_types: Vec<Type> = arg_call
                             .as_array()
-                            .unwrap_or(&vec![])
+                            .map(Vec::as_slice)
+                            .unwrap_or(&[])
                             .iter()
                             .filter_map(|t| t.as_str())
                             .map(Self::convert_python_type_to_our_type)
@@ -540,6 +541,8 @@ _tracer.print_traces()
                             .add_function_call(func_name.clone(), arg_types, return_type);
                     }
                 }
+            }
+        }
             }
         }
 
