@@ -11,7 +11,7 @@ pub fn find_python_files<P: AsRef<Path>>(path: P) -> impl Iterator<Item = PathBu
         .filter_map(Result::ok)
         .filter(|entry| {
             let path = entry.path();
-            path.is_file() && path.extension().map_or(false, |ext| ext == "py")
+            path.is_file() && path.extension().is_some_and(|ext| ext == "py")
         })
         .map(|entry| entry.path().to_path_buf())
 }

@@ -144,7 +144,7 @@ impl Fixer {
             let mut name = trimmed;
             let mut default = "";
             if let Some(eq_idx) = trimmed.find('=') {
-                name = &trimmed[..eq_idx].trim();
+                name = trimmed[..eq_idx].trim();
                 default = &trimmed[eq_idx..];
             }
             let fixed = format!("{}{}: Any{}{}", leading, name, default, trailing);

@@ -18,11 +18,11 @@ pub enum Error {
 
     /// Type checking related errors.
     #[error("Type error: {0}")]
-    TypeError(String),
+    Type(String),
 
     /// Invalid argument errors.
     #[error("Invalid argument: {0}")]
-    ArgumentError(String),
+    Argument(String),
 
     /// Feature not implemented yet.
     #[error("Not implemented: {0}")]
@@ -41,12 +41,12 @@ impl Error {
 
     /// Creates a new type error.
     pub fn type_error(msg: impl Into<String>) -> Self {
-        Self::TypeError(msg.into())
+        Self::Type(msg.into())
     }
 
     /// Creates a new argument error.
     pub fn argument_error(msg: impl Into<String>) -> Self {
-        Self::ArgumentError(msg.into())
+        Self::Argument(msg.into())
     }
 
     /// Creates a new not implemented error.
