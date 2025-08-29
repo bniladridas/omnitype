@@ -16,7 +16,7 @@ impl fmt::Display for TypeVar {
 }
 
 /// Represents a type in the omnitype system.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Type {
     /// The unknown type (used during inference)
     Unknown,
