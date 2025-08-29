@@ -5,11 +5,15 @@ def add_numbers(a, b):
     """Add two numbers together."""
     return a + b
 
-def process_list(items):
+from typing import Any, Iterable
+
+def process_list(items: Iterable[Any]) -> list[Any]:
     """Process a list of items."""
     result = []
     for item in items:
-        if isinstance(item, int):
+        if isinstance(item, bool):
+            result.append(item)  # keep booleans as-is
+        elif isinstance(item, int):
             result.append(item * 2)
         elif isinstance(item, str):
             result.append(item.upper())
