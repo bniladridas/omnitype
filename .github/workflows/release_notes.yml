@@ -30,7 +30,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          bash .github/scripts/generatecodediffs.sh
+          bash .github/scripts/generate.sh
 
       - name: Upload release notes artifact
         uses: actions/upload-artifact@v4
