@@ -63,6 +63,7 @@ impl Analyzer {
     }
 
     /// Visits a node in the syntax tree and processes it.
+    #[allow(clippy::only_used_in_recursion)]
     fn visit_node(&mut self, _node: &Node, _source: &[u8]) -> Result<()> {
         // TODO: Implement node visiting logic for type inference
 
