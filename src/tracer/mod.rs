@@ -1,9 +1,10 @@
 //! Runtime type tracing for dynamic type information collection.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::process::{Command, Stdio};
+use tempfile::NamedTempFile;
 
 use crate::error::{Error, Result};
 use crate::types::Type;
@@ -35,9 +36,11 @@ impl TypeTrace {
     /// Get unique types for a variable
     pub fn get_variable_types(&self, name: &str) -> Vec<&Type> {
         if let Some(types) = self.variables.get(name) {
+            let mut seen = HashSet::new();
             let mut unique_types = Vec::new();
+            
             for t in types {
-                if !unique_types.contains(&t) {
+                if seen.insert(t) {
                     unique_types.push(t);
                 }
             }
@@ -90,34 +93,27 @@ impl RuntimeTracer {
         }
 
         // Create a temporary instrumented version of the Python file
-        let instrumented_content = self.instrument_python_file(path)?;
-        let temp_file = path.with_extension("traced.py");
-
-        // Write the instrumented file
-        fs::write(&temp_file, instrumented_content)?;
-
-        // Execute the instrumented Python file
-        let output = if let Some(test_name) = test_name {
-            // For specific test, modify the instrumented content to only run that test
-            let specific_test_content = self.create_specific_test_content(path, test_name)?;
-            fs::write(&temp_file, specific_test_content)?;
-
-            Command::new("python3")
-                .arg(&temp_file)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output()
+        let instrumented_content = if let Some(test_name) = test_name {
+            self.create_specific_test_content(path, test_name)?
         } else {
-            // Run the entire file
-            Command::new("python3")
-                .arg(&temp_file)
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output()
+            self.instrument_python_file(path)?
         };
 
-        // Clean up temporary file
-        let _ = fs::remove_file(&temp_file);
+        // Create a temporary file with proper cleanup handling
+        let temp_file = NamedTempFile::with_suffix(".py")
+            .map_err(|e| Error::Io(std::io::Error::other(format!("Failed to create temp file: {}", e))))?;
+
+        // Write the instrumented content
+        fs::write(temp_file.path(), instrumented_content)?;
+
+        // Execute the instrumented Python file
+        let output = Command::new("python3")
+            .arg(temp_file.path())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output();
+
+        // temp_file is automatically cleaned up when it goes out of scope
 
         match output {
             Ok(output) => {
@@ -156,8 +152,146 @@ impl RuntimeTracer {
         let content = fs::read_to_string(path)?;
 
         // Create a comprehensive tracing system using sys.settrace
-        let tracer_code = format!(
-            r#"
+        let tracer_code = r#"
+import sys
+import json
+import types
+import inspect
+import functools
+
+# Runtime type tracer with call tracing
+class TypeTracer:
+    def __init__(self):
+        self.traces = {"variables": {}, "functions": {}}
+        self.call_stack = []
+        self.in_trace = False
+    
+    def get_type_name(self, value):
+        if value is None:
+            return "None"
+        elif isinstance(value, bool):
+            return "bool"
+        elif isinstance(value, int):
+            return "int"
+        elif isinstance(value, float):
+            return "float"
+        elif isinstance(value, str):
+            return "str"
+        elif isinstance(value, bytes):
+            return "bytes"
+        elif isinstance(value, list):
+            if value:
+                inner_type = self.get_type_name(value[0])
+                return f"List[{inner_type}]"
+            return "List[Any]"
+        elif isinstance(value, dict):
+            if value:
+                key_type = self.get_type_name(next(iter(value.keys())))
+                val_type = self.get_type_name(next(iter(value.values())))
+                return f"Dict[{key_type}, {val_type}]"
+            return "Dict[Any, Any]"
+        elif isinstance(value, tuple):
+            if value:
+                types_list = [self.get_type_name(item) for item in value]
+                return f"Tuple[{', '.join(types_list)}]"
+            return "Tuple[()]"
+        elif isinstance(value, set):
+            if value:
+                inner_type = self.get_type_name(next(iter(value)))
+                return f"Set[{inner_type}]"
+            return "Set[Any]"
+        else:
+            return type(value).__name__
+    
+    def trace_function_call(self, func_name, args, result):
+        arg_types = [self.get_type_name(arg) for arg in args]
+        result_type = self.get_type_name(result)
+        
+        if func_name not in self.traces["functions"]:
+            self.traces["functions"][func_name] = {"args": [], "returns": []}
+        
+        self.traces["functions"][func_name]["args"].append(arg_types)
+        self.traces["functions"][func_name]["returns"].append(result_type)
+    
+    def trace_calls(self, frame, event, arg):
+        if self.in_trace:
+            return
+        
+        self.in_trace = True
+        try:
+            if event == 'call':
+                func_name = frame.f_code.co_name
+                if not func_name.startswith('_') and func_name not in ['<module>', 'trace_calls']:
+                    # Get function arguments
+                    args = []
+                    arg_names = frame.f_code.co_varnames[:frame.f_code.co_argcount]
+                    for name in arg_names:
+                        if name in frame.f_locals and name != 'self':
+                            args.append(frame.f_locals[name])
+                    
+                    self.call_stack.append((func_name, args))
+            
+            elif event == 'return':
+                if self.call_stack:
+                    func_name, args = self.call_stack.pop()
+                    if not func_name.startswith('_'):
+                        self.trace_function_call(func_name, args, arg)
+        finally:
+            self.in_trace = False
+        
+        return self.trace_calls
+    
+    def print_traces(self):
+        print("TRACE_OUTPUT_START")
+        print(json.dumps(self.traces, indent=2))
+        print("TRACE_OUTPUT_END")
+
+_tracer = TypeTracer()
+
+"#.to_string();
+
+        // Append the original code directly
+        let mut full_code = tracer_code;
+        full_code.push_str(&content);
+        full_code.push_str(r#"
+
+# Set up call tracing
+sys.settrace(_tracer.trace_calls)
+
+# Only run test functions - safer approach
+current_module = sys.modules[__name__]
+
+# Run test functions only (following test_* convention)
+for name in dir(current_module):
+    obj = getattr(current_module, name)
+    if callable(obj) and name.startswith('test_') and not name.startswith('_'):
+        try:
+            print(f"Running test: {name}")
+            result = obj()
+        except Exception as e:
+            print(f"Error in test {name}: {e}")
+
+# Note: Other functions will be traced when called by test functions
+# This avoids the security risk of calling arbitrary functions with guessed arguments
+
+# Disable tracing
+sys.settrace(None)
+
+_tracer.print_traces()
+"#);
+
+        Ok(full_code)
+    }
+
+    /// Create instrumented content for a specific test function
+    fn create_specific_test_content<P: AsRef<Path>>(
+        &self,
+        path: P,
+        test_name: &str,
+    ) -> Result<String> {
+        let content = fs::read_to_string(path)?;
+
+        let tracer_code = format!(r#"
 import sys
 import json
 import types
@@ -254,165 +388,24 @@ class TypeTracer:
 _tracer = TypeTracer()
 
 # Execute the original code
-exec('''
-{original_code}
-''')
+exec('''{original_code}''')
 
-# Set up call tracing
-sys.settrace(_tracer.trace_calls)
-
-# Now run test functions and other functions
-current_module = sys.modules[__name__]
-
-# Run test functions
-for name in dir(current_module):
-    obj = getattr(current_module, name)
-    if callable(obj) and name.startswith('test_') and not name.startswith('_'):
-        try:
-            print(f"Running test: {{name}}")
-            result = obj()
-        except Exception as e:
-            print(f"Error in test {{name}}: {{e}}")
-
-# Try to call other functions with sample data
-for name in dir(current_module):
-    obj = getattr(current_module, name)
-    if (callable(obj) and 
-        not name.startswith('_') and 
-        not name.startswith('test_') and
-        hasattr(obj, '__code__') and
-        name not in ['TypeTracer']):
-        
-        try:
-            sig = inspect.signature(obj)
-            args = []
-            
-            for param in sig.parameters.values():
-                if param.name == 'self':
-                    continue
-                elif 'int' in param.name or 'num' in param.name or param.name in ['a', 'b', 'x', 'y']:
-                    args.append(42)
-                elif 'float' in param.name or param.name in ['value']:
-                    args.append(3.14)
-                elif 'str' in param.name or 'text' in param.name or param.name in ['name', 'message']:
-                    args.append("test")
-                elif 'list' in param.name or 'items' in param.name or param.name == 'numbers':
-                    args.append([1, 2, 3])
-                elif 'dict' in param.name or 'data' in param.name:
-                    args.append({{"key": "value"}})
-                else:
-                    args.append(None)
-            
-            if len(args) <= 4:  # Only call functions with reasonable number of args
-                print(f"Testing function: {{name}} with args {{args}}")
-                result = obj(*args)
-        except Exception as e:
-            print(f"Could not test {{name}}: {{e}}")
-
-# Disable tracing
-sys.settrace(None)
-
-", original_code = content);
-"#,
-            original_code = content.replace("'", r"\'").replace("\"", r#"\""#)
-        );
-
-        Ok(tracer_code)
-    }
-
-    /// Create instrumented content for a specific test function
-    fn create_specific_test_content<P: AsRef<Path>>(
-        &self,
-        path: P,
-        test_name: &str,
-    ) -> Result<String> {
-        let content = fs::read_to_string(path)?;
-
-        let tracer_code = format!(
-            r#"
-import sys
-import json
-import types
-import inspect
-
-# Runtime type tracer
-class TypeTracer:
-    def __init__(self):
-        self.traces = {{"variables": {{}}, "functions": {{}}}}
-    
-    def get_type_name(self, value):
-        if value is None:
-            return "None"
-        elif isinstance(value, bool):
-            return "bool"
-        elif isinstance(value, int):
-            return "int"
-        elif isinstance(value, float):
-            return "float"
-        elif isinstance(value, str):
-            return "str"
-        elif isinstance(value, bytes):
-            return "bytes"
-        elif isinstance(value, list):
-            if value:
-                inner_type = self.get_type_name(value[0])
-                return f"List[{{inner_type}}]"
-            return "List[Any]"
-        elif isinstance(value, dict):
-            if value:
-                key_type = self.get_type_name(next(iter(value.keys())))
-                val_type = self.get_type_name(next(iter(value.values())))
-                return f"Dict[{{key_type}}, {{val_type}}]"
-            return "Dict[Any, Any]"
-        elif isinstance(value, tuple):
-            if value:
-                types_list = [self.get_type_name(item) for item in value]
-                return f"Tuple[{{', '.join(types_list)}}]"
-            return "Tuple[()]"
-        elif isinstance(value, set):
-            if value:
-                inner_type = self.get_type_name(next(iter(value)))
-                return f"Set[{{inner_type}}]"
-            return "Set[Any]"
-        else:
-            return type(value).__name__
-    
-    def trace_function_call(self, func_name, args, result):
-        arg_types = [self.get_type_name(arg) for arg in args]
-        result_type = self.get_type_name(result)
-        
-        if func_name not in self.traces["functions"]:
-            self.traces["functions"][func_name] = {{"args": [], "returns": []}}
-        
-        self.traces["functions"][func_name]["args"].append(arg_types)
-        self.traces["functions"][func_name]["returns"].append(result_type)
-    
-    def print_traces(self):
-        print("TRACE_OUTPUT_START")
-        print(json.dumps(self.traces, indent=2))
-        print("TRACE_OUTPUT_END")
-
-_tracer = TypeTracer()
-
-# Execute the original code
-exec('''
-{original_code}
-''')
-
-# Run the specific test function
+# Run the specific test function with tracing enabled
 current_module = sys.modules[__name__]
 if hasattr(current_module, '{test_name}'):
     test_func = getattr(current_module, '{test_name}')
+    sys.settrace(_tracer.trace_calls)
     try:
         print(f"Tracing specific test: {test_name}")
-        result = test_func()
-        _tracer.trace_function_call('{test_name}', [], result if result is not None else None)
+        test_func()
     except Exception as e:
         print(f"Error calling {test_name}: {{e}}")
+    finally:
+        sys.settrace(None)
 
 _tracer.print_traces()
-"#,
-            original_code = content.replace("'", r"\'").replace("\"", r#"\""#),
+"#, 
+            original_code = content,
             test_name = test_name
         );
 
@@ -551,12 +544,13 @@ _tracer.print_traces()
         if !self.traces.variables.is_empty() {
             println!("\nVariable Types:");
             for (name, types) in &self.traces.variables {
-                let unique_types: Vec<String> = types
+                let mut unique_types: Vec<String> = types
                     .iter()
                     .map(|t| t.to_string())
                     .collect::<std::collections::HashSet<_>>()
                     .into_iter()
                     .collect();
+                unique_types.sort();
                 println!("  {}: {}", name, unique_types.join(" | "));
             }
         }
@@ -622,6 +616,35 @@ mod tests {
     }
 
     #[test]
+    fn test_get_variable_types_deduplication() {
+        let mut trace = TypeTrace::default();
+
+        // Add duplicate types for the same variable
+        trace.add_variable("y".to_string(), Type::Int);
+        trace.add_variable("y".to_string(), Type::Int);  // duplicate
+        trace.add_variable("y".to_string(), Type::Str);
+        trace.add_variable("y".to_string(), Type::Int);  // another duplicate
+        trace.add_variable("y".to_string(), Type::Str);  // another duplicate
+
+        let y_types = trace.get_variable_types("y");
+        
+        // Should only have 2 unique types despite 5 additions
+        assert_eq!(y_types.len(), 2);
+        assert!(y_types.contains(&&Type::Int));
+        assert!(y_types.contains(&&Type::Str));
+        
+        // Test with complex types
+        trace.add_variable("z".to_string(), Type::List(Box::new(Type::Int)));
+        trace.add_variable("z".to_string(), Type::List(Box::new(Type::Int)));  // duplicate
+        trace.add_variable("z".to_string(), Type::List(Box::new(Type::Str)));
+        
+        let z_types = trace.get_variable_types("z");
+        assert_eq!(z_types.len(), 2);
+        assert!(z_types.contains(&&Type::List(Box::new(Type::Int))));
+        assert!(z_types.contains(&&Type::List(Box::new(Type::Str))));
+    }
+
+    #[test]
     fn test_python_type_conversion() {
         assert_eq!(RuntimeTracer::convert_python_type_to_our_type("int"), Type::Int);
         assert_eq!(RuntimeTracer::convert_python_type_to_our_type("str"), Type::Str);
@@ -648,10 +671,10 @@ def test_simple():
     assert simple_function(5) == 6
 "#;
 
-        let temp_file = "test_temp.py";
-        fs::write(temp_file, test_content).unwrap();
+        let temp_file = NamedTempFile::with_suffix(".py").unwrap();
+        fs::write(temp_file.path(), test_content).unwrap();
 
-        let instrumented = tracer.instrument_python_file(temp_file);
+        let instrumented = tracer.instrument_python_file(temp_file.path());
         assert!(instrumented.is_ok());
 
         let content = instrumented.unwrap();
@@ -659,7 +682,6 @@ def test_simple():
         assert!(content.contains("TRACE_OUTPUT_START"));
         assert!(content.contains("sys.settrace"));
 
-        // Clean up
-        let _ = fs::remove_file(temp_file);
+        // temp_file is automatically cleaned up when it goes out of scope
     }
 }

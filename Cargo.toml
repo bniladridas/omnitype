@@ -20,6 +20,7 @@ env_logger = "0.10"
 log = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+tempfile = "3.3"
 thiserror = "1.0"
 tree-sitter = "0.20"
 tree-sitter-python = { version = "0.20", optional = true }
@@ -34,4 +35,3 @@ ratatui = { version = "0.24", features = ["crossterm"] }
 # (removed older duplicates and the deprecated tui crate)
 
 [dev-dependencies]
-tempfile = "3.3"
