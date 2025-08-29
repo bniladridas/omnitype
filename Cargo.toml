@@ -15,7 +15,6 @@ default = ["python"]
 python = ["tree-sitter-python"]
 
 [dependencies]
-anyhow = "1.0"
 clap = { version = "4.3", features = ["derive"] }
 env_logger = "0.10"
 log = "0.4"
@@ -35,6 +34,4 @@ ratatui = { version = "0.24", features = ["crossterm"] }
 # (removed older duplicates and the deprecated tui crate)
 
 [dev-dependencies]
-pretty_assertions = "1.3"
-rstest = "0.17"
 tempfile = "3.3"
