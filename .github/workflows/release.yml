@@ -127,6 +127,8 @@ jobs:
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             ext: '.exe'
+    permissions:
+      contents: read
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
