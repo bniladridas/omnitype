@@ -3,6 +3,12 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Rust](https://img.shields.io/badge/rust-1.89%2B-orange.svg)](https://www.rust-lang.org)
 
+<p align="middle">
+  <img src="https://github.com/user-attachments/assets/ce273fbf-3e59-41b3-b0cf-a699327963e0" width="700" alt="Alert 7" />
+</p>
+
+
+
 > [!TIP]
 > Available commands for omnitype:
 > ```bash
