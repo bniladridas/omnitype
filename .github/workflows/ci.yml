@@ -24,7 +24,7 @@ jobs:
       contents: read
       checks: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -48,8 +48,6 @@ jobs:
       
       - name: Install nightly toolchain for cargo-udeps
         uses: dtolnay/rust-toolchain@nightly
-        with:
-          override: true
       
       - name: Install cargo-udeps
         uses: taiki-e/install-action@v2
@@ -77,7 +75,7 @@ jobs:
         rust: [stable]
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -113,7 +111,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
-          file: ./target/tarpaulin/cobertura.xml
+          files: ./target/tarpaulin/cobertura.xml
           fail_ci_if_error: false
           use_oidc: true
 
@@ -125,7 +123,7 @@ jobs:
       checks: write
       issues: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
