@@ -57,10 +57,11 @@ jobs:
       - name: Check for unused dependencies
         run: cargo +nightly udeps --all-targets
       
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      
       - name: Audit dependencies
-        uses: actions-rust-lang/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo audit
 
   test:
     name: Test Suite
@@ -128,8 +129,8 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
       
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      
       - name: Run cargo-audit
-        uses: actions-rust-lang/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --deny warnings
+        run: cargo audit --deny warnings
