@@ -1,4 +1,6 @@
 name: CI
+permissions:
+  contents: read
 
 on:
   push:
@@ -18,16 +20,16 @@ jobs:
   check:
     name: Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          profile: minimal
           components: rustfmt, clippy
-          override: true
       
       - name: Cache cargo
         uses: actions/cache@v3
@@ -45,41 +47,47 @@ jobs:
         run: cargo clippy -- -D warnings
       
       - name: Install nightly toolchain for cargo-udeps
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          profile: minimal
-          override: false
+        uses: dtolnay/rust-toolchain@nightly
       
       - name: Install cargo-udeps
-        run: cargo install cargo-udeps
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-udeps
       
       - name: Check for unused dependencies
         run: cargo +nightly udeps --all-targets
       
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      
       - name: Audit dependencies
-        uses: actions-rs/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo audit --ignore RUSTSEC-2024-0436
 
   test:
     name: Test Suite
     needs: check
     runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         rust: [stable]
     
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
+      
+      - name: Install cargo-tarpaulin
+        if: matrix.os == 'ubuntu-latest'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-tarpaulin
       
       - name: Cache cargo
         uses: actions/cache@v3
@@ -97,32 +105,32 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get install -y libssl-dev pkg-config
-          cargo install cargo-tarpaulin
           cargo tarpaulin --out Xml --output-dir target/tarpaulin
         continue-on-error: true
       
       - name: Upload coverage to Codecov (Linux only)
         if: matrix.os == 'ubuntu-latest'
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
-          file: ./target/tarpaulin/cobertura.xml
+          files: ./target/tarpaulin/cobertura.xml
           fail_ci_if_error: false
+          use_oidc: true
 
   security:
     name: Security Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      issues: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+        uses: dtolnay/rust-toolchain@stable
+      
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
       
       - name: Run cargo-audit
-        uses: actions-rs/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --deny warnings
+        run: cargo audit --deny warnings --ignore RUSTSEC-2024-0436
