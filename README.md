@@ -1,3 +1,7 @@
+• Check stock releases [->](https://github.com/bniladridas/omnitype/releases)
+
+<img width="1440" height="900" alt="Image" src="https://github.com/user-attachments/assets/ba1a1c16-6d58-49a8-8a94-2aa7a2236eaa" />
+
 [![CI](https://github.com/bniladridas/omnitype/workflows/CI/badge.svg)](https://github.com/bniladridas/omnitype/actions)
 [![Release](https://github.com/bniladridas/omnitype/actions/workflows/release.yml/badge.svg)](https://github.com/bniladridas/omnitype/actions/workflows/release.yml)
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
@@ -6,8 +10,6 @@
 <p align="middle">
   <img src="https://github.com/user-attachments/assets/ce273fbf-3e59-41b3-b0cf-a699327963e0" width="700" alt="Alert 7" />
 </p>
-
-
 
 > [!TIP]
 > Available commands for omnitype:
