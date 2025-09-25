@@ -1,0 +1,18 @@
+/target
+
+# Coverage reports
+coverage_report/
+target/tarpaulin/
+lcov.info
+*.profraw
+*.profdata
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

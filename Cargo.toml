@@ -1,0 +1,39 @@
+[package]
+name = "omnitype"
+version = "0.1.1"
+edition = "2021"
+description = "A hybrid type checker for Python and other dynamic languages"
+license = "Apache-2.0"
+authors = ["bniladridas <bniladridas@users.noreply.github.com>"]
+repository = "https://github.com/bniladridas/omnitype"
+readme = "README.md"
+keywords = ["type-checking", "python", "static-analysis"]
+categories = ["development-tools", "parser-implementations"]
+
+[features]
+default = ["python"]
+python = ["tree-sitter-python"]
+
+[dependencies]
+base64 = "0.21"
+clap = { version = "4.3", features = ["derive"] }
+env_logger = "0.10"
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tempfile = "3.3"
+thiserror = "1.0"
+tree-sitter = "0.20"
+tree-sitter-python = { version = "0.20", optional = true }
+unicode-width = "0.1"
+unicode-segmentation = "1.10"
+walkdir = "2.3"
+wait-timeout = "0.2.0"
+
+# TUI dependencies (single versions)
+crossterm = "0.27"
+ratatui = { version = "0.24", features = ["crossterm"] }
+
+# (removed older duplicates and the deprecated tui crate)
+
+[dev-dependencies]

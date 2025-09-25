@@ -1,0 +1,16 @@
+# Default owners for everything in the repo
+* @bniladridas
+
+# Specific file patterns
+/src/**/*.rs @bniladridas
+/Cargo.toml @bniladridas
+/README.md @bniladridas
+
+# Documentation
+/docs/**/* @bniladridas
+
+# Tests
+/tests/**/* @bniladridas
+
+# CI Configuration
+.github/workflows/* @bniladridas

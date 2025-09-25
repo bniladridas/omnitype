@@ -1,0 +1,25 @@
+# Documentation
+# https://rust-lang.github.io/rust-clippy/master/index.html
+
+# Valid identifiers for documentation
+doc-valid-idents = ["DoxyUnexposed"]
+
+# Complexity thresholds
+cognitive-complexity-threshold = 15
+too-many-arguments-threshold = 7
+too-many-lines-threshold = 500
+type-complexity-threshold = 250
+
+# Size thresholds
+enum-variant-size-threshold = 200
+large-error-threshold = 128
+trivial-copy-size-limit = 128
+pass-by-value-size-limit = 256
+
+# Allowed items
+allowed-scripts = ["Latin"]
+disallowed-names = ["foo", "baz", "quux"]
+
+# Behavior settings
+avoid-breaking-exported-api = false
+check-private-items = false

@@ -1,0 +1,43 @@
+version: 2
+updates:
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Assign PRs to the person or team who owns the workflow files
+    assignees:
+      - "your-github-username"
+    labels:
+      - "dependencies"
+      - "github-actions"
+
+  # Enable version updates for Cargo
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Assign PRs to the Rust maintainers team
+    assignees:
+      - "your-github-username"
+    labels:
+      - "dependencies"
+      - "rust"
+    # Don't update to pre-release versions
+    ignore:
+      - dependency-name: "*"
+        versions: ["*-alpha.*", "*-beta.*", "*-rc.*"]
+
+  # Enable version updates for npm (if you have any JavaScript/TypeScript tooling)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    assignees:
+      - "your-github-username"
+    labels:
+      - "dependencies"
+      - "javascript"
+    ignore:
+      - dependency-name: "*"
+        versions: ["*-alpha.*", "*-beta.*", "*-rc.*"]
