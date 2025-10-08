@@ -38,4 +38,38 @@ cargo clippy -- -D warnings
 cargo fmt
 ```
 
+## Conventional Commits
+
+This project uses conventional commit standards to ensure consistent and meaningful commit messages.
+
+### Setup
+
+To enable the commit message hook that enforces conventional commits:
+
+```bash
+cp scripts/commit-msg .git/hooks/commit-msg
+chmod +x .git/hooks/commit-msg
+```
+
+The hook checks that commit messages:
+- Start with a type like `feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`, `build:`, `revert:`
+- Are lowercase
+- Have a first line ≤60 characters
+
+### History Cleanup
+
+To rewrite existing commit messages in the git history to conform to the standards (lowercase and truncated to 60 chars):
+
+```bash
+./scripts/rewrite_msg.sh
+```
+
+After running, force-push to update the remote repository:
+
+```bash
+git push --force-with-lease
+```
+
+The git history has been rewritten to follow these standards.
+
 — @omnitype by [harper](https://github.com/harpertoken)
